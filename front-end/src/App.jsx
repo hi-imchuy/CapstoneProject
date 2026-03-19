@@ -4,6 +4,7 @@ function App() {
   return (
     <>
       <Button variant="outlined">ABCD</Button>
+      <Button variant="outlined">1234</Button>
     </>
   )
 }

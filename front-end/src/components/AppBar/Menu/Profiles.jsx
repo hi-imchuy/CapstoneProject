@@ -14,6 +14,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { selectCurrentUser, logoutUserAPI } from '~/redux/user/userSlice'
 import { useConfirm } from 'material-ui-confirm'
 import { Link } from 'react-router-dom'
+import { Button } from '@mui/material'
 
 function Profiles() {
   const dispatch = useDispatch()
@@ -40,7 +41,22 @@ function Profiles() {
   }
 
   return (
-    <Box>
+    (currentUser === null ?
+    <Link to='/login'>
+      <Button
+        variant='contained'
+        sx={{
+          backgroundColor: (theme) => theme.palette.mode === 'light' ? '#ffffff' : '#2C3E50',
+          color: (theme) => theme.palette.mode === 'light' ? '#2C3E50' : '#ffffff',
+          '&:hover': {
+            backgroundColor: (theme) => theme.palette.mode === 'light' ? '#f0f0f0' : '#1f2b3c'
+          }
+        }}>
+        Login
+      </Button>
+    </Link>
+    
+    : <Box>
       <Tooltip title="Account settings">
         <IconButton
           onClick={handleClick}
@@ -99,7 +115,7 @@ function Profiles() {
           Logout
         </MenuItem>
       </Menu>
-    </Box>
+    </Box>)
   )
 }
 

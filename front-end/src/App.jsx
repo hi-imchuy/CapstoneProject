@@ -6,6 +6,7 @@ import AccountVerification from './pages/Auth/AccountVerification'
 import { useSelector } from 'react-redux'
 import { selectCurrentUser } from '~/redux/user/userSlice'
 import Settings from '~/pages/Settings/Settings'
+import Main from './pages/Users/main'
 
 const ProtectedRoute = ({ user }) => {
   if (!user) return <Navigate to='/login' replace={true}/>
@@ -17,9 +18,11 @@ function App() {
   return (
     <Routes>
       {/* Redirect Route */}
-      <Route path='/' element={
+      {/* <Route path='/' element={
         <Navigate to={currentUser ? '/settings/account' : '/login'} replace={true}/>
-      } />
+      } /> */}
+
+      <Route path='/' element={<Main/>}/>
 
       {/* ProtectedRoutes (Hiểu đơn giản là những route chỉ cho phép truy cập sau khi login) */}
       <Route element={<ProtectedRoute user={currentUser}/>}>

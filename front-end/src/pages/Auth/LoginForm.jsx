@@ -3,7 +3,6 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Avatar from '@mui/material/Avatar'
-import trelloIcon from '~/assets/trello.svg'
 import LockIcon from '@mui/icons-material/Lock'
 import Typography from '@mui/material/Typography'
 import { Card as MuiCard } from '@mui/material'
@@ -57,9 +56,6 @@ function LoginForm() {
             gap: 1
           }}>
             <Avatar sx={{ bgcolor: 'primary.main' }}><LockIcon /></Avatar>
-            <Avatar sx={{ bgcolor: 'primary.main' }}>
-              <Box component="img" src={trelloIcon} alt="Trello" sx={{ width: 20, height: 20 }} />
-            </Avatar>
           </Box>
           <Box sx={{ marginTop: '1em', display: 'flex', justifyContent: 'center', color: theme => theme.palette.grey[500] }}>
             Author: chauhuyne
@@ -129,7 +125,7 @@ function LoginForm() {
             </Button>
           </CardActions>
           <Box sx={{ padding: '0 1em 1em 1em', textAlign: 'center' }}>
-            <Typography>New to Trello MERN Stack Advanced?</Typography>
+            <Typography>New to our website?</Typography>
             <Link to="/register" style={{ textDecoration: 'none' }}>
               <Typography sx={{ color: 'primary.main', '&:hover': { color: '#ffbb39' } }}>Create account!</Typography>
             </Link>

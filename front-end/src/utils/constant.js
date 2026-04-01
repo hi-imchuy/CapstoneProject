@@ -1,10 +1,11 @@
+import { env } from "./environment"
 let apiRoot = ''
 
 if (import.meta.env.MODE === 'production') {
-  apiRoot = ''
+  apiRoot = env.WEBSITE_DOMAIN_PRODUCTION
 }
 if (import.meta.env.MODE === 'development') {
-  apiRoot = 'http://localhost:8017'
+  apiRoot = env.WEBSITE_DOMAIN_DEVELOPMENT
 }
 
 export const API_ROOT = apiRoot

@@ -4,8 +4,10 @@ const APP_BAR_HEIGHT = '58px'
 // const BOARD_BAR_HEIGHT = '60px'
 const BOARD_BAR_HEIGHT = '0px'
 const BOARD_CONTENT_HEIGHT = `calc(100vh - ${APP_BAR_HEIGHT} - ${BOARD_BAR_HEIGHT})`
-const COLUMN_HEADER_HEIGHT = '50px'
-const COLUMN_FOOTER_HEIGHT = '56px'
+const CHAT_BAR_HEIGHT = '50px'
+const CHAT_BOT_HEIGHT = '50px'
+const CHAT_CONTENT_HEIGHT = `calc(100vh - ${APP_BAR_HEIGHT} - ${CHAT_BAR_HEIGHT} - ${CHAT_BOT_HEIGHT})`
+
 
 // Create a theme instance.
 const theme = createTheme({
@@ -13,8 +15,9 @@ const theme = createTheme({
     appBarHeight: APP_BAR_HEIGHT,
     boardHeaderHeight: BOARD_BAR_HEIGHT,
     boardContentHeight: BOARD_CONTENT_HEIGHT,
-    columnHeaderHeight: COLUMN_HEADER_HEIGHT,
-    columnFooterHeight: COLUMN_FOOTER_HEIGHT
+    chatBarHeight: CHAT_BAR_HEIGHT,
+    chatBotHeight: CHAT_BOT_HEIGHT,
+    chatContentHeight: CHAT_CONTENT_HEIGHT
   },
   palette: {
     primary: {

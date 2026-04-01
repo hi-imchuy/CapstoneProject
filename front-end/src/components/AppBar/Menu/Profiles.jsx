@@ -29,12 +29,29 @@ function Profiles() {
     setAnchorEl(null)
   }
 
-  const confrimLogout = useConfirm()
+  const confirmLogout = useConfirm()
   const handleLogout = () => {
-    confrimLogout({
+    confirmLogout({
       title: 'Log out your account?',
       confirmationText: 'Logout',
-      cancellationText: 'Cancel'
+      cancellationText: 'Cancel',
+      dialogProps: {
+        sx: {
+          '& .MuiDialog-paper': {
+            bgcolor: (theme) => theme.palette.mode === 'dark' ? '#1e1e1e' : '#ffffff'
+          }
+        }
+      },
+      titleProps: {
+        sx: {
+          color: (theme) => theme.palette.mode === 'dark' ? '#ffffff' : '#000000'
+        }
+      },
+      cancellationButtonProps: {
+        sx: {
+          color: (theme) => theme.palette.mode === 'dark' ? '#ffffff' : '#000000'
+        }
+      }
     }).then(() => {
       dispatch(logoutUserAPI())
     }).catch(() => {})
@@ -78,8 +95,21 @@ function Profiles() {
         onClose={handleClose}
         onClick={handleClose}
         slotProps={{
+          paper: {
+            sx: {
+              bgcolor: '#ffffff',
+              color: '#2C3E50'
+            }
+          },
           list: {
-            'aria-labelledby': 'basic-button-profiles'
+            'aria-labelledby': 'basic-button-profiles',
+            sx: {
+              bgcolor: '#ffffff',
+              color: '#2C3E50',
+              '& .MuiListItemIcon-root': {
+                color: '#2C3E50'
+              }
+            }
           }
         }}
       >

@@ -16,6 +16,8 @@ import SearchIcon from '@mui/icons-material/Search'
 import { Link } from 'react-router-dom'
 import QuestionAnswerIcon from '@mui/icons-material/QuestionAnswer'
 import SmartToyIcon from '@mui/icons-material/SmartToy'
+import { useSelector } from 'react-redux'
+import { selectCurrentUser } from '~/redux/user/userSlice'
 // import Notifications from './Notifications/Notifications'
 // import AutoCompleteSearchBoard from './SearchBoards/AutoCompleteSearchBoard'
 
@@ -29,6 +31,8 @@ function AppBar() {
   // const handleDeleteSearch = () => {
   //   setSearchValue('')
   // }
+
+  const currentUser = useSelector(selectCurrentUser)
 
   return (
     <Box sx={{
@@ -90,10 +94,12 @@ function AppBar() {
             Chat với AI
           </Button>
           <Button
+            component={Link}
+            to='/chat/doctor'
             sx={{ color: (theme) => (theme.palette.mode === 'dark' ? '#2C3E50' : 'white') }}
             startIcon={<QuestionAnswerIcon />}
           >
-            Chat với Bác Sĩ
+            {currentUser?.role === 'patient' ? 'Chat với Bác Sĩ' : 'Chat với Bệnh Nhân'}
           </Button>
         </Box>
       </Box>

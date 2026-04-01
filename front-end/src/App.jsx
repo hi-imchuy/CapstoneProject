@@ -6,7 +6,8 @@ import AccountVerification from './pages/Auth/AccountVerification'
 import { useSelector } from 'react-redux'
 import { selectCurrentUser } from '~/redux/user/userSlice'
 import Settings from '~/pages/Settings/Settings'
-import Main from './pages/Users/main'
+import Main from './pages/Main/main'
+import DoctorChat from './pages/Chat/DoctorChat'
 
 const ProtectedRoute = ({ user }) => {
   if (!user) return <Navigate to='/login' replace={true}/>
@@ -30,6 +31,8 @@ function App() {
         {/* User Settings */}
         <Route path='/settings/account' element={<Settings />} />
         <Route path='/settings/security' element={<Settings />} />
+
+        <Route path='/chat/doctor' element={<DoctorChat/>}/>
 
       </Route>
 

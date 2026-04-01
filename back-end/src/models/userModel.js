@@ -63,6 +63,30 @@ const findOneByEmail = async (emailValue) => {
   }
 }
 
+const findManyByRole = async (role, excludeUserId = null) => {
+  try {
+    const query = {
+      role,
+      isActive: true,
+      _destroy: false
+    }
+
+    if (excludeUserId) {
+      query._id = { $ne: new ObjectId(String(excludeUserId)) }
+    }
+
+    const result = await GET_DB()
+      .collection(USER_COLLECTION_NAME)
+      .find(query)
+      .sort({ displayName: 1 })
+      .toArray()
+
+    return result
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 const update = async (userId, updateData) => {
   try {
     Object.keys(updateData).forEach(fieldName => {
@@ -104,6 +128,7 @@ export const userModel = {
   createNew,
   findOneById,
   findOneByEmail,
+  findManyByRole,
   update,
   verifyEmail
 }

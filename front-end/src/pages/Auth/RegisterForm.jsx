@@ -26,6 +26,36 @@ import { toast } from 'react-toastify'
 import { USER_ROLE } from '~/utils/constant'
 
 function RegisterForm() {
+  const authCardSx = {
+    minWidth: 380,
+    maxWidth: 380,
+    marginTop: '6em',
+    bgcolor: (theme) => theme.palette.mode === 'dark' ? '#f5f6fa' : '#ffffff',
+    color: '#2C3E50',
+    border: '1px solid #dfe6e9',
+    boxShadow: '0 10px 30px rgba(15, 23, 42, 0.25)'
+  }
+  const authTextFieldSx = {
+    '& .MuiInputLabel-root': {
+      color: '#5c6b7a'
+    },
+    '& .MuiInputLabel-root.Mui-focused': {
+      color: '#2C3E50'
+    },
+    '& .MuiOutlinedInput-root': {
+      color: '#2C3E50',
+      bgcolor: '#ffffff',
+      '& fieldset': {
+        borderColor: '#b2bec3'
+      },
+      '&:hover fieldset': {
+        borderColor: '#2C3E50'
+      },
+      '&.Mui-focused fieldset': {
+        borderColor: '#2C3E50'
+      }
+    }
+  }
   const { control, register, handleSubmit, formState: { errors }, watch } = useForm()
   const navigate = useNavigate()
 
@@ -40,16 +70,19 @@ function RegisterForm() {
   return (
     <form onSubmit={handleSubmit(submitRegister)}>
       <Zoom in={true} style={{ transitionDelay: '200ms' }}>
-        <MuiCard sx={{ minWidth: 380, maxWidth: 380, marginTop: '6em' }}>
+        <MuiCard sx={authCardSx}>
           <Box sx={{
             margin: '1em',
             display: 'flex',
             justifyContent: 'center',
             gap: 1
           }}>
-            <Avatar sx={{ bgcolor: 'primary.main' }}><LockIcon /></Avatar>
+            <Avatar sx={{
+              bgcolor: (theme) => theme.palette.mode === 'dark' ? '#dbeafe' : '#2C3E50',
+              color: (theme) => theme.palette.mode === 'dark' ? '#1e3a8a' : '#ffffff'
+            }}><LockIcon /></Avatar>
           </Box>
-          <Box sx={{ marginTop: '1em', display: 'flex', justifyContent: 'center', color: theme => theme.palette.grey[500] }}>
+          <Box sx={{ marginTop: '1em', display: 'flex', justifyContent: 'center', color: '#5c6b7a' }}>
             Author: Chauhuyne
           </Box>
           <Box sx={{ padding: '0 1em 1em 1em' }}>
@@ -58,6 +91,7 @@ function RegisterForm() {
                 // autoComplete="nope"
                 autoFocus
                 fullWidth
+                sx={authTextFieldSx}
                 label="Enter Email..."
                 type="text"
                 variant="outlined"
@@ -81,18 +115,29 @@ function RegisterForm() {
                 <RadioGroup
                   {...field}
                   row
+                  sx={{ color: '#2C3E50' }}
                   onChange={(event, value) => field.onChange(value)}
                   value={field.value}
                 >
                   <FormControlLabel
                     value={USER_ROLE.DOCTOR}
-                    control={<Radio size="small" />}
+                    control={<Radio size="small" sx={{
+                      color: '#2C3E50',
+                      '&.Mui-checked': {
+                        color: '#2C3E50'
+                      }
+                    }} />}
                     label="Doctor"
                     labelPlacement="start"
                   />
                   <FormControlLabel
                     value={USER_ROLE.PATIENT}
-                    control={<Radio size="small" />}
+                    control={<Radio size="small" sx={{
+                      color: '#2C3E50',
+                      '&.Mui-checked': {
+                        color: '#2C3E50'
+                      }
+                    }} />}
                     label="Patient"
                     labelPlacement="start"
                   />
@@ -103,6 +148,7 @@ function RegisterForm() {
             <Box sx={{ marginTop: '1em' }}>
               <TextField
                 fullWidth
+                sx={authTextFieldSx}
                 label="Enter Password..."
                 type="password"
                 variant="outlined"
@@ -121,6 +167,7 @@ function RegisterForm() {
             <Box sx={{ marginTop: '1em' }}>
               <TextField
                 fullWidth
+                sx={authTextFieldSx}
                 label="Enter Password Confirmation..."
                 type="password"
                 variant="outlined"
@@ -140,7 +187,11 @@ function RegisterForm() {
               className="interceptor-loading"
               type="submit"
               variant="contained"
-              color="primary"
+              sx={{
+                bgcolor: '#2C3E50',
+                color: '#ffffff',
+                '&:hover': { bgcolor: '#1f2b3c' }
+              }}
               size="large"
               fullWidth
             >
@@ -148,9 +199,12 @@ function RegisterForm() {
             </Button>
           </CardActions>
           <Box sx={{ padding: '0 1em 1em 1em', textAlign: 'center' }}>
-            <Typography>Already have an account?</Typography>
+            <Typography sx={{ color: '#2C3E50' }}>Already have an account?</Typography>
             <Link to="/login" style={{ textDecoration: 'none' }}>
-              <Typography sx={{ color: 'primary.main', '&:hover': { color: '#ffbb39' } }}>Log in!</Typography>
+              <Typography sx={{
+                color: '#2C3E50',
+                '&:hover': { color: '#ffbb39' }
+              }}>Log in!</Typography>
             </Link>
           </Box>
         </MuiCard>

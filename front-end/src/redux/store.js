@@ -1,6 +1,7 @@
 // Redux: State management tool
 import { configureStore } from '@reduxjs/toolkit'
 import { userReducer } from './user/userSlice'
+import { conversationReducer } from './conversation/conversationSlice'
 
 import { combineReducers } from 'redux'
 import { persistReducer } from 'redux-persist'
@@ -48,7 +49,8 @@ const rootPersistConfig = {
 
 //Combine các reducers trong dự án
 const reducers = combineReducers({
-  user: userReducer
+  user: userReducer,
+  conversation: conversationReducer
 })
 
 const persistedReducer = persistReducer(rootPersistConfig, reducers)

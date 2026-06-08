@@ -1,7 +1,5 @@
 __pycache__
 .env
 
-data/chroma_db/
-
 model_DETR
 model_YOLO

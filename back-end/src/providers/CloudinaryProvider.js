@@ -26,6 +26,14 @@ const streamUpload = (fileBuffer, folderName) => {
   })
 }
 
+const destroyImage = (publicId) => {
+  return cloudinaryV2.uploader.destroy(publicId, {
+    resource_type: 'image',
+    invalidate: true
+  })
+}
+
 export const CloudinaryProvider = {
-  streamUpload
+  streamUpload,
+  destroyImage
 }

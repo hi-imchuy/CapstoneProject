@@ -5,8 +5,32 @@
 import { StatusCodes } from 'http-status-codes'
 import userService from '~/services/userService'
 import ms from 'ms'
+import { env } from '~/config/environment'
+
+const authCookieOptions = {
+  httpOnly: true,
+  secure: env.BUILD_MODE !== 'dev',
+  sameSite: env.BUILD_MODE === 'dev' ? 'lax' : 'none',
+  maxAge: ms('14 days')
+}
+
+const clearAuthCookieOptions = {
+  httpOnly: true,
+  secure: env.BUILD_MODE !== 'dev',
+  sameSite: env.BUILD_MODE === 'dev' ? 'lax' : 'none'
+}
 
 const userController = {
+  getProfile: async (req, res, next) => {
+    try {
+      const userId = req.jwtDecoded._id
+      const result = await userService.getProfile(userId)
+      res.status(StatusCodes.OK).json(result)
+    } catch (error) {
+      next(error)
+    }
+  },
+
   /**
    * POST /v1/users/signup
    * Đăng ký user mới
@@ -42,19 +66,9 @@ const userController = {
       const result = await userService.login(req.body)
 
       // Set HTTP-only cookies cho accessToken và refreshToken
-      res.cookie('accessToken', result.accessToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'none',
-        maxAge: ms('14 days')
-      })
+      res.cookie('accessToken', result.accessToken, authCookieOptions)
 
-      res.cookie('refreshToken', result.refreshToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'none',
-        maxAge: ms('14 days')
-      })
+      res.cookie('refreshToken', result.refreshToken, authCookieOptions)
 
       // Xóa password, verifyToken trước khi return
       delete result.password
@@ -73,8 +87,8 @@ const userController = {
   logout: async (req, res, next) => {
     try {
       // Chỉ cần clear cookies, không cần DB access
-      res.clearCookie('accessToken')
-      res.clearCookie('refreshToken')
+      res.clearCookie('accessToken', clearAuthCookieOptions)
+      res.clearCookie('refreshToken', clearAuthCookieOptions)
 
       res.status(StatusCodes.OK).json({ loggedOut: true })
     } catch (error) {
@@ -91,12 +105,7 @@ const userController = {
       const result = await userService.refreshToken(req.cookies?.refreshToken)
 
       // Set cookie cho access token mới
-      res.cookie('accessToken', result.accessToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'none',
-        maxAge: ms('14 days')
-      })
+      res.cookie('accessToken', result.accessToken, authCookieOptions)
 
       res.status(StatusCodes.OK).json(result)
     } catch (error) {

@@ -25,6 +25,9 @@ Router.post('/logout', authMiddleware.isAuthorized, userController.logout)
 // POST /v1/users/refresh-token - Refresh access token
 Router.post('/refresh-token', userController.refreshToken)
 
+// GET /v1/users/profile - Lay thong tin user hien tai tu cookie token
+Router.get('/profile', authMiddleware.isAuthorized, userController.getProfile)
+
 // PUT /v1/users - Update user info (change password, upload avatar, update displayName)
 Router.put('/', authMiddleware.isAuthorized, multerUpdloadMiddleware.upload.single('avatar'), validateUserInput.validateUpdate, userController.update)
 

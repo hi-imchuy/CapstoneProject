@@ -1,0 +1,3 @@
+python-server/.env
+python-server/data/chroma_db/
+python-server/__pycache__/

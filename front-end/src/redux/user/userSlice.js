@@ -38,12 +38,24 @@ export const updateUserAPI = createAsyncThunk(
   }
 )
 
+export const fetchCurrentUserAPI = createAsyncThunk(
+  'user/fetchCurrentUserAPI',
+  async () => {
+    const response = await authorizedAxiosInstance.get(`${API_ROOT}/v1/users/profile`)
+    return response.data
+  }
+)
+
 //Khoi tao mot Slice trong kho luu tru Redux Store
 export const userSlice = createSlice({
   name: 'user',
   initialState,
   //Reducers: Noi xu ly du lieu dong bo
-  reducers: {},
+  reducers: {
+    clearCurrentUser: (state) => {
+      state.currentUser = null
+    }
+  },
   //Nơi xử lý dữ liệu bất đồng bộ
   extraReducers: (builder) => {
     builder.addCase(loginUserAPI.fulfilled, (state, action) => {
@@ -58,11 +70,17 @@ export const userSlice = createSlice({
       const user = action.payload
       state.currentUser = user
     })
+    builder.addCase(fetchCurrentUserAPI.fulfilled, (state, action) => {
+      state.currentUser = action.payload
+    })
+    builder.addCase(fetchCurrentUserAPI.rejected, (state) => {
+      state.currentUser = null
+    })
   }
 })
 
 // Action creators are generated for each case reducer function
-// export const {} = userSlice.actions
+export const { clearCurrentUser } = userSlice.actions
 
 //Selectors: Là nơi dành cho các components bên dưới gọi bằng hook useSelector() để lấy dữ liệu từ trong kho redux ra ngoài để sử dụng
 export const selectCurrentUser = (state) => {

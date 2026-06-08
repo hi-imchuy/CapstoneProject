@@ -87,3 +87,53 @@ export const refreshTokenAPI = async () => {
   const response = await authorizedAxiosInstance.post(`${API_ROOT}/v1/users/refresh-token`)
   return response.data
 }
+
+/** Skin detections */
+export const createSkinDetectionAPI = async (data) => {
+  const response = await authorizedAxiosInstance.post(`${API_ROOT}/v1/skin-detections`, data)
+  return response.data
+}
+
+export const fetchSkinDetectionsAPI = async () => {
+  const response = await authorizedAxiosInstance.get(`${API_ROOT}/v1/skin-detections`)
+  return response.data
+}
+
+export const deleteSkinDetectionAPI = async (detectionId) => {
+  const response = await authorizedAxiosInstance.delete(`${API_ROOT}/v1/skin-detections/${detectionId}`)
+  return response.data
+}
+
+/** AI conversations */
+export const fetchAIConversationsAPI = async () => {
+  const response = await authorizedAxiosInstance.get(`${API_ROOT}/v1/ai-conversations`)
+  return response.data
+}
+
+export const createAIConversationAPI = async (data = {}) => {
+  const response = await authorizedAxiosInstance.post(`${API_ROOT}/v1/ai-conversations`, data)
+  return response.data
+}
+
+export const updateAIConversationAPI = async (conversationId, data) => {
+  const response = await authorizedAxiosInstance.patch(`${API_ROOT}/v1/ai-conversations/${conversationId}`, data)
+  return response.data
+}
+
+export const fetchAIConversationMessagesAPI = async (conversationId) => {
+  const response = await authorizedAxiosInstance.get(`${API_ROOT}/v1/ai-conversations/${conversationId}/messages`)
+  return response.data
+}
+
+export const sendAIMessageAPI = async (conversationId, message) => {
+  const response = await authorizedAxiosInstance.post(
+    `${API_ROOT}/v1/ai-conversations/${conversationId}/messages`,
+    { message }
+  )
+  return response.data
+}
+
+export const clearAIConversationMessagesAPI = async (conversationId) => {
+  const response = await authorizedAxiosInstance.delete(`${API_ROOT}/v1/ai-conversations/${conversationId}/messages`)
+  return response.data
+}

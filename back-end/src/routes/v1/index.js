@@ -2,6 +2,8 @@ import express from 'express'
 import { StatusCodes } from 'http-status-codes'
 import userRoute from './userRoute'
 import conversationRoute from './conversationRoute'
+import skinDetectionRoute from './skinDetectionRoute'
+import aiConversationRoute from './aiConversationRoute'
 
 const Router = express.Router()
 
@@ -13,5 +15,7 @@ Router.get('/status', (req, res) => {
 // User routes
 Router.use('/users', userRoute)
 Router.use('/conversations', conversationRoute)
+Router.use('/skin-detections', skinDetectionRoute)
+Router.use('/ai-conversations', aiConversationRoute)
 
 export const APIs_V1 = Router

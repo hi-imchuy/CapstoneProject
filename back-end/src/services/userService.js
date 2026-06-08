@@ -14,6 +14,21 @@ import { BrevoProvider } from '~/providers/BrevoProvider'
 import { CloudinaryProvider } from '~/providers/CloudinaryProvider'
 
 const userService = {
+  getProfile: async (userId) => {
+    try {
+      const existingUser = await userModel.findOneById(userId)
+      if (!existingUser) throw new ApiError(StatusCodes.NOT_FOUND, 'Tai khoan khong ton tai')
+      if (!existingUser.isActive) throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Tai khoan chua duoc kich hoat')
+
+      delete existingUser.password
+      delete existingUser.verifyToken
+
+      return existingUser
+    } catch (error) {
+      throw error
+    }
+  },
+
   /**
    * Tạo user mới - Đăng ký
    */

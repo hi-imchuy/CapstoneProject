@@ -12,12 +12,27 @@ import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord'
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded'
 import ForumRoundedIcon from '@mui/icons-material/ForumRounded'
 import PhotoRoundedIcon from '@mui/icons-material/PhotoRounded'
+import CircularProgress from '@mui/material/CircularProgress'
 
 import VisuallyHiddenInput from '~/components/Form/VisuallyHiddenInput'
 
 const defaultFormatMessageTime = (value) => {
   if (!value) return ''
   return new Date(value).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+}
+
+const sanitizeChatContent = (value = '') => {
+  return String(value)
+    .replace(/^\s*[-*]\s+/gm, '')
+    .replace(/^#{1,6}\s*/gm, '')
+    .trim()
+}
+
+const renderChatContent = (value = '') => {
+  return sanitizeChatContent(value)
+    .replace(/\*\*(.+?)\*\*/gs, (_, content) => content.trim().toLocaleUpperCase('vi-VN'))
+    .replace(/\*\*/g, '')
+    .replace(/\*/g, '')
 }
 
 function ChatBox({
@@ -48,7 +63,9 @@ function ChatBox({
   inputPlaceholder = 'Nhap tin nhan hoac gui hinh anh...',
   disabledInputPlaceholder = 'Chon mot cuoc tro chuyen truoc...',
   uploadAccept = 'image/png,image/jpeg,image/jpg',
-  formatMessageTime = defaultFormatMessageTime
+  formatMessageTime = defaultFormatMessageTime,
+  showImageUpload = true,
+  isSending = false
 }) {
   const participant = activeConversation?.participant
   const resolvedEmptyIcon = emptyIcon || <ForumRoundedIcon sx={{ fontSize: 34 }} />
@@ -116,7 +133,17 @@ function ChatBox({
                   <Typography sx={{ fontSize: '0.74rem', opacity: 0.72 }}>{formatMessageTime(chat.createdAt)}</Typography>
                 </Box>
 
-                {chat.content && <Typography sx={{ lineHeight: 1.65, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{chat.content}</Typography>}
+                {chat.content && (
+                  <Typography
+                    sx={{
+                      lineHeight: 1.65,
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word'
+                    }}
+                  >
+                    {renderChatContent(chat.content)}
+                  </Typography>
+                )}
 
                 {chat.image && (
                   <Box component='img' src={chat.image} alt='chat-attachment' sx={{ mt: chat.content ? 1.25 : 0.25, width: '100%', maxWidth: 300, borderRadius: '16px', display: 'block', border: '1px solid', borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(148, 163, 184, 0.18)' : 'rgba(44, 62, 80, 0.10)' }} />
@@ -154,21 +181,23 @@ function ChatBox({
             value={messageInput}
             onChange={(event) => onMessageInputChange(event.target.value)}
             onKeyDown={onMessageInputKeyDown}
-            disabled={!activeConversation}
+            disabled={!activeConversation || isSending}
             sx={{ '& .MuiOutlinedInput-root': { borderRadius: '20px', minHeight: 56, py: 0.75, alignItems: 'center', bgcolor: (theme) => theme.palette.mode === 'dark' ? '#081120' : '#ffffff', color: (theme) => theme.palette.mode === 'dark' ? '#f8fafc' : '#0f172a', '& textarea': { paddingTop: 0, paddingBottom: 0 }, '& fieldset': { borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(148, 163, 184, 0.18)' : 'rgba(148, 163, 184, 0.22)' }, '&:hover fieldset': { borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(125, 211, 252, 0.34)' : 'rgba(15, 23, 42, 0.24)' }, '&.Mui-focused fieldset': { borderColor: (theme) => theme.palette.mode === 'dark' ? '#38bdf8' : '#0f172a' } } }}
           />
 
-          <Tooltip title='Gui hinh anh'>
-            <span>
-              <IconButton component='label' disabled={!activeConversation} sx={{ width: 46, height: 46, borderRadius: '16px', color: (theme) => theme.palette.mode === 'dark' ? '#7dd3fc' : '#0f172a', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(56, 189, 248, 0.10)' : 'rgba(15, 23, 42, 0.05)', border: '1px solid', borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(56, 189, 248, 0.18)' : 'rgba(15, 23, 42, 0.08)' }}>
-                <PhotoRoundedIcon />
-                <VisuallyHiddenInput type='file' accept={uploadAccept} onChange={onSelectImage} />
-              </IconButton>
-            </span>
-          </Tooltip>
+          {showImageUpload && (
+            <Tooltip title='Gui hinh anh'>
+              <span>
+                <IconButton component='label' disabled={!activeConversation || isSending} sx={{ width: 46, height: 46, borderRadius: '16px', color: (theme) => theme.palette.mode === 'dark' ? '#7dd3fc' : '#0f172a', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(56, 189, 248, 0.10)' : 'rgba(15, 23, 42, 0.05)', border: '1px solid', borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(56, 189, 248, 0.18)' : 'rgba(15, 23, 42, 0.08)' }}>
+                  <PhotoRoundedIcon />
+                  <VisuallyHiddenInput type='file' accept={uploadAccept} onChange={onSelectImage} />
+                </IconButton>
+              </span>
+            </Tooltip>
+          )}
 
-          <IconButton onClick={onSendMessage} disabled={!canSendMessage} sx={{ width: 46, height: 46, borderRadius: '16px', bgcolor: (theme) => theme.palette.mode === 'dark' ? '#38bdf8' : '#0f172a', color: (theme) => theme.palette.mode === 'dark' ? '#06121f' : '#f8fafc', opacity: canSendMessage ? 1 : 0.6, boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 14px 30px rgba(14, 165, 233, 0.24)' : '0 14px 28px rgba(15, 23, 42, 0.18)', '&:hover': { bgcolor: (theme) => theme.palette.mode === 'dark' ? '#67e8f9' : '#111c31' } }}>
-            <SendIcon />
+          <IconButton onClick={onSendMessage} disabled={!canSendMessage || isSending} sx={{ width: 46, height: 46, borderRadius: '16px', bgcolor: (theme) => theme.palette.mode === 'dark' ? '#38bdf8' : '#0f172a', color: (theme) => theme.palette.mode === 'dark' ? '#06121f' : '#f8fafc', opacity: canSendMessage && !isSending ? 1 : 0.6, boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 14px 30px rgba(14, 165, 233, 0.24)' : '0 14px 28px rgba(15, 23, 42, 0.18)', '&:hover': { bgcolor: (theme) => theme.palette.mode === 'dark' ? '#67e8f9' : '#111c31' } }}>
+            {isSending ? <CircularProgress size={21} color='inherit' /> : <SendIcon />}
           </IconButton>
         </Box>
       </Box>

@@ -1,15 +1,37 @@
+import { useEffect, useState } from 'react'
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom'
 
 import NotFound from './pages/404/NotFound'
 import Auth from '~/pages/Auth/Auth'
 import AccountVerification from './pages/Auth/AccountVerification'
-import { useSelector } from 'react-redux'
-import { selectCurrentUser } from '~/redux/user/userSlice'
+import { useDispatch, useSelector } from 'react-redux'
+import { fetchCurrentUserAPI, selectCurrentUser } from '~/redux/user/userSlice'
 import Settings from '~/pages/Settings/Settings'
 import Main from './pages/Main/main'
 import DoctorChat from './pages/Chat/DoctorChat'
+import AIChat from './pages/Chat/AIChat'
+import SkinDetection from './pages/SkinDetection/SkinDetection'
 
 const ProtectedRoute = ({ user }) => {
+  const dispatch = useDispatch()
+  const userId = user?._id
+  const [checkedUserId, setCheckedUserId] = useState('')
+
+  useEffect(() => {
+    let isMounted = true
+
+    if (!userId) return
+
+    dispatch(fetchCurrentUserAPI()).finally(() => {
+      if (isMounted) setCheckedUserId(userId)
+    })
+
+    return () => {
+      isMounted = false
+    }
+  }, [dispatch, userId])
+
+  if (userId && checkedUserId !== userId) return null
   if (!user) return <Navigate to='/login' replace={true}/>
   return <Outlet />
 }
@@ -32,7 +54,9 @@ function App() {
         <Route path='/settings/account' element={<Settings />} />
         <Route path='/settings/security' element={<Settings />} />
 
+        <Route path='/skin-detection' element={<SkinDetection/>}/>
         <Route path='/chat/doctor' element={<DoctorChat/>}/>
+        <Route path='/chat/ai' element={<AIChat/>}/>
 
       </Route>
 

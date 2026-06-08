@@ -82,12 +82,16 @@ function AppBar() {
           <Starred />
           <Templates /> */}
           <Button
+            component={Link}
+            to='/skin-detection'
             sx={{ color: (theme) => (theme.palette.mode === 'dark' ? '#2C3E50' : 'white') }}
             startIcon={<SearchIcon />}
           >
             Nhận diện bệnh
           </Button>
           <Button
+            component={Link}
+            to='/chat/ai'
             sx={{ color: (theme) => (theme.palette.mode === 'dark' ? '#2C3E50' : 'white') }}
             startIcon={<SmartToyIcon />}
           >

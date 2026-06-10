@@ -1,10 +1,10 @@
 import { StatusCodes } from 'http-status-codes'
 
-import { env } from '~/config/environment'
 import { CloudinaryProvider } from '~/providers/CloudinaryProvider'
 import { skinDetectionModel } from '~/models/skinDetectionModel'
 import { userModel } from '~/models/userModel'
 import ApiError from '~/utils/ApiError'
+import { getPythonServerUrl } from '~/utils/envHelpers'
 
 const ensureExistingActiveUser = async (userId) => {
   const existingUser = await userModel.findOneById(userId)
@@ -35,7 +35,7 @@ const parseDetectionsHeader = (headerValue) => {
 }
 
 const callPythonDetectionServer = async (imageUrl) => {
-  const pythonServerUrl = env.PYTHON_SERVER_URL || 'http://localhost:8000'
+  const pythonServerUrl = getPythonServerUrl()
 
   let response
   try {

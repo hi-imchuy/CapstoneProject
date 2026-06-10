@@ -7,12 +7,12 @@ import Typography from '@mui/material/Typography'
 import Avatar from '@mui/material/Avatar'
 import Paper from '@mui/material/Paper'
 import Divider from '@mui/material/Divider'
-import Chip from '@mui/material/Chip'
 import ImageIcon from '@mui/icons-material/Image'
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord'
 import SmartToyRoundedIcon from '@mui/icons-material/SmartToyRounded'
 import HealthAndSafetyRoundedIcon from '@mui/icons-material/HealthAndSafetyRounded'
 import { toast } from 'react-toastify'
+import { useConfirm } from 'material-ui-confirm'
 
 import AppBar from '~/components/AppBar/AppBar'
 import ChatBox from '~/components/ChatBox/ChatBox'
@@ -20,12 +20,13 @@ import { singleFileValidator } from '~/utils/validators'
 import { USER_ROLE } from '~/utils/constant'
 import { selectCurrentUser } from '~/redux/user/userSlice'
 import {
-  clearConversationMessagesAPI,
   createOrGetConversationAPI,
+  deleteConversationMessageAPI,
   fetchContactsAPI,
   fetchConversationsAPI,
   fetchMessagesAPI,
   receiveConversationCreated,
+  receiveMessageDeleted,
   receiveMessagesCleared,
   receiveRealtimeMessage,
   selectActiveConversation,
@@ -51,6 +52,7 @@ const formatMessagePreview = (conversation) => {
 
 function DoctorChat() {
   const dispatch = useDispatch()
+  const confirmDeleteMessage = useConfirm()
   const currentUser = useSelector(selectCurrentUser)
   const contacts = useSelector(selectConversationContacts)
   const conversations = useSelector(selectConversationList)
@@ -90,14 +92,20 @@ function DoctorChat() {
       dispatch(receiveMessagesCleared(conversation))
     }
 
+    const handleMessageDeleted = (payload) => {
+      dispatch(receiveMessageDeleted(payload))
+    }
+
     socket.on('conversation:created', handleConversationCreated)
     socket.on('conversation:message-created', handleRealtimeMessage)
     socket.on('conversation:messages-cleared', handleMessagesCleared)
+    socket.on('conversation:message-deleted', handleMessageDeleted)
 
     return () => {
       socket.off('conversation:created', handleConversationCreated)
       socket.off('conversation:message-created', handleRealtimeMessage)
       socket.off('conversation:messages-cleared', handleMessagesCleared)
+      socket.off('conversation:message-deleted', handleMessageDeleted)
       disconnectChatSocket()
     }
   }, [currentUser?._id, dispatch])
@@ -166,7 +174,7 @@ function DoctorChat() {
   const handleSendMessage = async () => {
     const trimmedMessage = messageInput.trim()
     if (!activeConversation?._id) {
-      toast.info('Hay chon mot cuoc tro chuyen truoc khi gui tin nhan')
+      toast.info('Chọn 1 cuộc trò chuyện để gửi tin nhắn')
       return
     }
 
@@ -188,9 +196,24 @@ function DoctorChat() {
     setSelectedImagePreview('')
   }
 
-  const handleClearMessages = async () => {
-    if (!activeConversation?._id) return
-    await dispatch(clearConversationMessagesAPI(activeConversation._id)).unwrap()
+  const handleDeleteMessage = async (message) => {
+    if (!activeConversation?._id || !message?._id) return
+
+    try {
+      await confirmDeleteMessage({
+        title: 'Xóa tin nhắn này?',
+        description: 'Tin nhắn của bạn sẽ bị xóa khỏi cuộc trò chuyện. Hành động này không thể hoàn tác.',
+        confirmationText: 'Xóa tin nhắn',
+        cancellationText: 'Hủy'
+      })
+    } catch {
+      return
+    }
+
+    await dispatch(deleteConversationMessageAPI({
+      conversationId: activeConversation._id,
+      messageId: message._id
+    })).unwrap()
   }
 
   const handleTextFieldKeyDown = async (event) => {
@@ -264,11 +287,11 @@ function DoctorChat() {
             onSendMessage={handleSendMessage}
             onSelectImage={handleSelectImage}
             onRemoveSelectedImage={handleRemoveSelectedImage}
-            onClearMessages={handleClearMessages}
+            onDeleteMessage={handleDeleteMessage}
+            canDeleteMessage={(chat) => chat.sender === currentUser?.role}
             selectedImageFile={selectedImageFile}
             selectedImagePreview={selectedImagePreview}
             messagesEndRef={messagesEndRef}
-            canClearMessages={Boolean(activeConversation?._id)}
             canSendMessage={Boolean(activeConversation && (messageInput.trim() || selectedImageFile))}
           />
         </Grid>
@@ -322,7 +345,7 @@ function DoctorChat() {
                   {isDoctor ? <HealthAndSafetyRoundedIcon /> : <SmartToyRoundedIcon />}
                 </Box>
                 <Box>
-                  <Typography sx={{ fontSize: '1rem', fontWeight: 800, color: (theme) => theme.palette.mode === 'dark' ? '#f8fafc' : '#0f172a' }}>
+                  <Typography sx={{ fontSize: '1rem', lineHeight: 1.18, fontWeight: 700, letterSpacing: '-0.015em', color: (theme) => theme.palette.mode === 'dark' ? '#f8fafc' : '#0f172a' }}>
                     {sidebarTitle}
                   </Typography>
                   <Typography sx={{ fontSize: '0.8rem', color: (theme) => theme.palette.mode === 'dark' ? '#94a3b8' : '#64748b' }}>
@@ -330,16 +353,6 @@ function DoctorChat() {
                   </Typography>
                 </Box>
               </Box>
-
-              <Chip
-                size='small'
-                label='Realtime messaging'
-                sx={{
-                  borderRadius: '999px',
-                  bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(56, 189, 248, 0.10)' : '#eff6ff',
-                  color: (theme) => theme.palette.mode === 'dark' ? '#7dd3fc' : '#0369a1'
-                }}
-              />
             </Box>
 
             <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', p: 1.2 }}>
@@ -379,7 +392,7 @@ function DoctorChat() {
                       </Avatar>
 
                       <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Typography sx={{ fontWeight: 800, color: (theme) => theme.palette.mode === 'dark' ? '#f8fafc' : '#0f172a' }}>
+                        <Typography sx={{ lineHeight: 1.18, fontWeight: 700, letterSpacing: '-0.015em', color: (theme) => theme.palette.mode === 'dark' ? '#f8fafc' : '#0f172a' }}>
                           {contact.displayName}
                         </Typography>
                         <Typography noWrap sx={{ mt: 0.25, fontSize: '0.8rem', color: (theme) => theme.palette.mode === 'dark' ? '#94a3b8' : '#64748b' }}>

@@ -83,6 +83,16 @@ export const clearConversationMessagesAPI = createAsyncThunk(
   }
 )
 
+export const deleteConversationMessageAPI = createAsyncThunk(
+  'conversation/deleteConversationMessageAPI',
+  async ({ conversationId, messageId }) => {
+    const response = await authorizedAxiosInstance.delete(
+      `${API_ROOT}/v1/conversations/${conversationId}/messages/${messageId}`
+    )
+    return response.data
+  }
+)
+
 export const conversationSlice = createSlice({
   name: 'conversation',
   initialState,
@@ -109,6 +119,17 @@ export const conversationSlice = createSlice({
       const conversation = action.payload
       state.conversations = updateOrInsertConversation(state.conversations, conversation)
       state.messagesByConversation[conversation._id] = []
+
+      if (state.activeConversation?._id === conversation._id) {
+        state.activeConversation = conversation
+      }
+    },
+    receiveMessageDeleted: (state, action) => {
+      const { conversation, messageId } = action.payload
+      state.conversations = updateOrInsertConversation(state.conversations, conversation)
+      state.messagesByConversation[conversation._id] = (
+        state.messagesByConversation[conversation._id] || []
+      ).filter(message => message._id !== messageId)
 
       if (state.activeConversation?._id === conversation._id) {
         state.activeConversation = conversation
@@ -154,6 +175,16 @@ export const conversationSlice = createSlice({
         state.activeConversation = conversation
       }
     })
+    builder.addCase(deleteConversationMessageAPI.fulfilled, (state, action) => {
+      const { conversation, messageId } = action.payload
+      state.conversations = updateOrInsertConversation(state.conversations, conversation)
+      state.messagesByConversation[conversation._id] = (
+        state.messagesByConversation[conversation._id] || []
+      ).filter(message => message._id !== messageId)
+      if (state.activeConversation?._id === conversation._id) {
+        state.activeConversation = conversation
+      }
+    })
   }
 })
 
@@ -162,6 +193,7 @@ export const {
   receiveConversationCreated,
   receiveRealtimeMessage,
   receiveMessagesCleared,
+  receiveMessageDeleted,
   resetConversationState
 } = conversationSlice.actions
 

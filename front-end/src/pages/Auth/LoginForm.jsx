@@ -67,7 +67,7 @@ function LoginForm() {
     const { email, password } = data
     toast.promise(
       dispatch(loginUserAPI({ email, password })),
-      { pending: 'Logging in...' }
+      { pending: 'Đang đăng nhập...' }
     ).then(res => {
       console.log(res)
       //Đoạn này kiểm tra đăng nhập không có lỗi mới redirect về route '/'
@@ -96,15 +96,15 @@ function LoginForm() {
           <Box sx={{ marginTop: '1em', display: 'flex', justifyContent: 'center', flexDirection: 'column', padding: '0 1em' }}>
             {verifiedEmail &&
             <Alert severity="success" sx={{ '.MuiAlert-message': { overflow: 'hidden' } }}>
-              Your email&nbsp;
+              Email&nbsp;
               <Typography component="span" sx={{ fontWeight: 'bold', '&:hover': { color: '#fdba26' } }}>{verifiedEmail}</Typography>
-              &nbsp;has been verified.<br />Now you can login to enjoy our services! Have a good day!
+              &nbsp;đã được xác thực.<br />Bạn có thể đăng nhập để sử dụng dịch vụ.
             </Alert>}
             {registeredEmail &&
             <Alert severity="info" sx={{ '.MuiAlert-message': { overflow: 'hidden' } }}>
-              An email has been sent to&nbsp;
+              Email xác thực đã được gửi đến&nbsp;
               <Typography component="span" sx={{ fontWeight: 'bold', '&:hover': { color: '#fdba26' } }}>{registeredEmail}</Typography>
-              <br />Please check and verify your account before logging in!
+              <br />Vui lòng kiểm tra hộp thư và xác thực tài khoản trước khi đăng nhập.
             </Alert>}
           </Box>
           <Box sx={{ padding: '0 1em 1em 1em' }}>
@@ -114,7 +114,7 @@ function LoginForm() {
                 autoFocus
                 fullWidth
                 sx={authTextFieldSx}
-                label="Enter Email..."
+                label="Nhập email..."
                 type="text"
                 variant="outlined"
                 error={!!errors['email']}
@@ -132,7 +132,7 @@ function LoginForm() {
               <TextField
                 fullWidth
                 sx={authTextFieldSx}
-                label="Enter Password..."
+                label="Nhập mật khẩu..."
                 type="password"
                 variant="outlined"
                 error={!!errors['password']}
@@ -160,16 +160,16 @@ function LoginForm() {
               size="large"
               fullWidth
             >
-              Login
+              Đăng nhập
             </Button>
           </CardActions>
           <Box sx={{ padding: '0 1em 1em 1em', textAlign: 'center' }}>
-            <Typography sx={{ color: '#2C3E50' }}>New to our website?</Typography>
+            <Typography sx={{ color: '#2C3E50' }}>Bạn chưa có tài khoản?</Typography>
             <Link to="/register" style={{ textDecoration: 'none' }}>
               <Typography sx={{
                 color: '#2C3E50',
                 '&:hover': { color: '#ffbb39' }
-              }}>Create account!</Typography>
+              }}>Tạo tài khoản!</Typography>
             </Link>
           </Box>
         </MuiCard>

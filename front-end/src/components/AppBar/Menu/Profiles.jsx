@@ -69,7 +69,7 @@ function Profiles() {
             backgroundColor: (theme) => theme.palette.mode === 'light' ? '#f0f0f0' : '#1f2b3c'
           }
         }}>
-        Login
+        Đăng nhập
       </Button>
     </Link>
     
@@ -120,7 +120,7 @@ function Profiles() {
             <Avatar
               sx={{ width: 28, height: 28, mr: 2 }}
               src={currentUser?.avatar}
-            /> Profile
+            /> Trang cá nhân
           </MenuItem>
         </Link>
         <Divider />
@@ -128,13 +128,13 @@ function Profiles() {
           <ListItemIcon>
             <PersonAdd fontSize="small" />
           </ListItemIcon>
-          Add another account
+          Thêm tài khoản
         </MenuItem>
         <MenuItem>
           <ListItemIcon>
             <Settings fontSize="small" />
           </ListItemIcon>
-          Settings
+          Cài đặt
         </MenuItem>
         <MenuItem onClick={handleLogout} sx={{
           '&:hover': { color: 'warning.dark', '& .logout-icon': { color: 'warning.dark' } }
@@ -142,7 +142,7 @@ function Profiles() {
           <ListItemIcon>
             <Logout className='logout-icon' fontSize="small" />
           </ListItemIcon>
-          Logout
+          Đăng xuất
         </MenuItem>
       </Menu>
     </Box>)

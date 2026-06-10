@@ -25,7 +25,7 @@ function AccountVerification() {
   //Nếu chưa verify xong thì hiện loading
   if (!verified) {
     return (
-      <PageLoadingSpinner caption="Verifying your account" />
+      <PageLoadingSpinner caption="Đang xác thực tài khoản" />
     )
   }
 

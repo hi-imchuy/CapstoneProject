@@ -216,6 +216,47 @@ const conversationService = {
     })
 
     return summary
+  },
+
+  deleteMessage: async (userId, conversationId, messageId) => {
+    const currentUser = await ensureExistingActiveUser(userId)
+    const conversation = await ensureConversationParticipant(userId, conversationId)
+    const message = await messageModel.findOneById(messageId)
+
+    if (!message || String(message.conversationId) !== String(conversation._id)) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Khong tim thay tin nhan')
+    }
+
+    if (message.sender !== currentUser.role) {
+      throw new ApiError(StatusCodes.FORBIDDEN, 'Ban chi co the xoa tin nhan cua chinh minh')
+    }
+
+    await messageModel.softDeleteById(message._id)
+
+    const summary = await buildConversationSummary({
+      ...conversation,
+      currentUserId: String(userId)
+    })
+    const counterpartUserId = String(userId) === conversation.doctorId ? conversation.patientId : conversation.doctorId
+    const counterpartSummary = await buildConversationSummary({
+      ...conversation,
+      currentUserId: counterpartUserId
+    })
+
+    const responseData = {
+      conversation: summary,
+      messageId: String(message._id)
+    }
+
+    chatSocket.emitMessageDeleted({
+      messageId: responseData.messageId,
+      conversationPayloads: [
+        { userId: String(userId), conversation: summary },
+        { userId: counterpartUserId, conversation: counterpartSummary }
+      ]
+    })
+
+    return responseData
   }
 }
 

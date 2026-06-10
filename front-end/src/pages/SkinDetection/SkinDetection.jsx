@@ -23,6 +23,7 @@ import RestartAltRoundedIcon from '@mui/icons-material/RestartAltRounded'
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded'
 import ZoomInRoundedIcon from '@mui/icons-material/ZoomInRounded'
 import ZoomOutRoundedIcon from '@mui/icons-material/ZoomOutRounded'
+import { useConfirm } from 'material-ui-confirm'
 import AppBar from '~/components/AppBar/AppBar'
 import { createSkinDetectionAPI, deleteSkinDetectionAPI, fetchSkinDetectionsAPI } from '~/apis'
 
@@ -32,6 +33,7 @@ const MAX_IMAGE_ZOOM = 4
 const IMAGE_ZOOM_STEP = 0.25
 
 function SkinDetection() {
+  const confirmDeleteHistory = useConfirm()
   const fileInputRef = useRef(null)
   const [selectedFile, setSelectedFile] = useState(null)
   const [previewUrl, setPreviewUrl] = useState('')
@@ -156,8 +158,16 @@ function SkinDetection() {
   const handleDeleteHistoryItem = async (detectionId) => {
     if (!detectionId || deletingHistoryId) return
 
-    const isConfirmed = window.confirm('Bạn có chắc muốn xóa lịch sử nhận diện này?')
-    if (!isConfirmed) return
+    try {
+      await confirmDeleteHistory({
+        title: 'Xóa lịch sử nhận diện?',
+        description: 'Kết quả nhận diện này sẽ bị xóa khỏi lịch sử. Hành động này không thể hoàn tác.',
+        confirmationText: 'Xóa lịch sử',
+        cancellationText: 'Hủy'
+      })
+    } catch {
+      return
+    }
 
     setDeletingHistoryId(detectionId)
     setErrorMessage('')

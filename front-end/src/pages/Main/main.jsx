@@ -10,9 +10,9 @@ import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded'
 import mainImg from '~/assets/main/main-img.png'
 
 const quickStats = [
-  { value: 'AI + KG', label: 'Nen tang cong nghe' },
-  { value: '24/7', label: 'San sang ho tro' },
-  { value: 'Image First', label: 'Tap trung trai nghiem' }
+  { value: 'Nhận diện và Chatbot', label: 'Nhanh - Chính xác' },
+  { value: '24/7', label: 'Sẵn sàng hỗ trợ' },
+  { value: 'Chat với bác sĩ', label: 'Trao đổi trực tiếp' }
 ]
 
 function Main() {
@@ -101,7 +101,7 @@ function Main() {
           >
             <Chip
               icon={<AutoAwesomeRoundedIcon />}
-              label='Nen tang ho tro da lieu thong minh'
+              label='Nền tảng hỗ trợ da liễu thông minh'
               sx={{
                 width: 'fit-content',
                 px: 1,
@@ -118,27 +118,27 @@ function Main() {
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <Typography
                 sx={{
-                  fontSize: { xs: '2rem', sm: '2.6rem', lg: '3.1rem' },
-                  lineHeight: 1.1,
-                  fontWeight: 800,
-                  letterSpacing: '-0.04em',
+                  fontSize: { xs: '2rem', sm: '2.45rem', lg: '3rem' },
+                  lineHeight: 1.18,
+                  fontWeight: 700,
+                  letterSpacing: '-0.015em',
                   maxWidth: 680,
                   color: (theme) => theme.palette.mode === 'dark' ? '#f8fafc' : '#0f172a'
                 }}
               >
-                He thong nhan dien benh da lieu bang hinh anh ket hop chatbot tu van.
+                Hệ thống nhận diện bệnh da liễu bằng hình ảnh kết hợp chatbot tư vấn.
               </Typography>
 
               <Typography
                 sx={{
                   fontSize: { xs: '0.96rem', md: '1rem' },
                   lineHeight: 1.7,
+                  fontWeight: 700,
                   maxWidth: 600,
                   color: (theme) => theme.palette.mode === 'dark' ? 'rgba(226, 232, 240, 0.78)' : '#475569'
                 }}
               >
-                Giao dien moi tap trung vao su ro rang, hien dai va de tin cay hon, giup nguoi dung nhanh
-                chong hieu duoc gia tri cua AI, xu ly hinh anh va chatbot hoi dap trong cung mot trai nghiem.
+                Trải nghiệm tư vấn da liễu thông minh, giúp người dùng nhận diện vấn đề qua hình ảnh và nhận hỗ trợ từ chatbot AI một cách nhanh chóng, rõ ràng.
               </Typography>
             </Box>
 
@@ -167,7 +167,7 @@ function Main() {
                   }
                 }}
               >
-                Bat dau ngay
+                Bắt đầu ngay
               </Button>
 
               <Button
@@ -197,7 +197,7 @@ function Main() {
                   }
                 }}
               >
-                Kham pha tinh nang
+                Khám phá tính năng
               </Button>
             </Stack>
 
@@ -224,7 +224,9 @@ function Main() {
                   <Typography
                     sx={{
                       fontSize: '1.1rem',
-                      fontWeight: 800,
+                      lineHeight: 1.18,
+                      fontWeight: 700,
+                      letterSpacing: '-0.015em',
                       color: (theme) => theme.palette.mode === 'dark' ? '#f8fafc' : '#0f172a'
                     }}
                   >
@@ -234,6 +236,9 @@ function Main() {
                     sx={{
                       mt: 0.5,
                       fontSize: '0.92rem',
+                      lineHeight: 1.35,
+                      fontWeight: 700,
+                      letterSpacing: '-0.015em',
                       color: (theme) => theme.palette.mode === 'dark' ? 'rgba(226, 232, 240, 0.72)' : '#64748b'
                     }}
                   >
@@ -294,10 +299,10 @@ function Main() {
               }}
             >
               <Typography sx={{ fontSize: '0.82rem', fontWeight: 700, color: '#38bdf8' }}>
-                Diagnostic support
+                Hỗ trợ chẩn đoán
               </Typography>
               <Typography sx={{ mt: 0.8, fontSize: '0.95rem', lineHeight: 1.6 }}>
-                Ket hop phan tich hinh anh voi hoi dap tu van trong mot luong trai nghiem lien mach.
+                Kết hợp phân tích hình ảnh với hỏi đáp tư vấn trong một luồng trải nghiệm liền mạch.
               </Typography>
             </Box>
 
@@ -315,10 +320,10 @@ function Main() {
               }}
             >
               <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: '#7dd3fc' }}>
-                UX refresh
+                Giao diện thân thiện
               </Typography>
               <Typography sx={{ mt: 0.8, fontSize: '1rem', fontWeight: 700, lineHeight: 1.5 }}>
-                Bo cuc rong hon, sang hon va tao cam giac san pham hien dai ngay tu man hinh dau tien.
+                Dễ dàng sử dụng, thao tác thuận tiện cho cả bệnh nhân và bác sĩ
               </Typography>
             </Box>
           </Box>

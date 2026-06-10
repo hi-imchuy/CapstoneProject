@@ -61,6 +61,20 @@ const conversationController = {
     } catch (error) {
       next(error)
     }
+  },
+
+  deleteMessage: async (req, res, next) => {
+    try {
+      const userId = req.jwtDecoded._id
+      const result = await conversationService.deleteMessage(
+        userId,
+        req.params.conversationId,
+        req.params.messageId
+      )
+      res.status(StatusCodes.OK).json(result)
+    } catch (error) {
+      next(error)
+    }
   }
 }
 

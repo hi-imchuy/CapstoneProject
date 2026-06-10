@@ -20,5 +20,6 @@ Router.post(
   conversationController.sendMessage
 )
 Router.delete('/:conversationId/messages', conversationController.clearMessages)
+Router.delete('/:conversationId/messages/:messageId', conversationController.deleteMessage)
 
 export default Router

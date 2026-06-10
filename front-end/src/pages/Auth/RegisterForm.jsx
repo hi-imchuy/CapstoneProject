@@ -62,7 +62,7 @@ function RegisterForm() {
   const submitRegister = (data) => {
     const { email, password, role } = data
     toast.promise(registerUserAPI({ email, password, role }),
-      { pending: 'Registration is on process' }
+      { pending: 'Đang đăng ký tài khoản...' }
     ).then(user => {
       navigate(`/login?registeredEmail=${user.email}`)
     })
@@ -83,7 +83,7 @@ function RegisterForm() {
             }}><LockIcon /></Avatar>
           </Box>
           <Box sx={{ marginTop: '1em', display: 'flex', justifyContent: 'center', color: '#5c6b7a' }}>
-            Author: Chauhuyne
+            Author: chauhuyne
           </Box>
           <Box sx={{ padding: '0 1em 1em 1em' }}>
             <Box sx={{ marginTop: '1em' }}>
@@ -92,7 +92,7 @@ function RegisterForm() {
                 autoFocus
                 fullWidth
                 sx={authTextFieldSx}
-                label="Enter Email..."
+                label="Nhập email..."
                 type="text"
                 variant="outlined"
                 error={!!errors['email']}
@@ -127,7 +127,7 @@ function RegisterForm() {
                         color: '#2C3E50'
                       }
                     }} />}
-                    label="Doctor"
+                    label="Bác sĩ"
                     labelPlacement="start"
                   />
                   <FormControlLabel
@@ -138,7 +138,7 @@ function RegisterForm() {
                         color: '#2C3E50'
                       }
                     }} />}
-                    label="Patient"
+                    label="Bệnh nhân"
                     labelPlacement="start"
                   />
                 </RadioGroup>
@@ -149,7 +149,7 @@ function RegisterForm() {
               <TextField
                 fullWidth
                 sx={authTextFieldSx}
-                label="Enter Password..."
+                label="Nhập mật khẩu..."
                 type="password"
                 variant="outlined"
                 error={!!errors['password']}
@@ -168,14 +168,14 @@ function RegisterForm() {
               <TextField
                 fullWidth
                 sx={authTextFieldSx}
-                label="Enter Password Confirmation..."
+                label="Nhập lại mật khẩu..."
                 type="password"
                 variant="outlined"
                 error={!!errors['password_confirmation']}
                 {...register('password_confirmation', {
                   validate: (value) => {
                     if (value === watch('password')) return true
-                    return 'Password Confirmation does not match!'
+                    return 'Mật khẩu xác nhận không khớp!'
                   }
                 })}
               />
@@ -195,16 +195,16 @@ function RegisterForm() {
               size="large"
               fullWidth
             >
-              Register
+              Đăng ký
             </Button>
           </CardActions>
           <Box sx={{ padding: '0 1em 1em 1em', textAlign: 'center' }}>
-            <Typography sx={{ color: '#2C3E50' }}>Already have an account?</Typography>
+            <Typography sx={{ color: '#2C3E50' }}>Bạn đã có tài khoản?</Typography>
             <Link to="/login" style={{ textDecoration: 'none' }}>
               <Typography sx={{
                 color: '#2C3E50',
                 '&:hover': { color: '#ffbb39' }
-              }}>Log in!</Typography>
+              }}>Đăng nhập!</Typography>
             </Link>
           </Box>
         </MuiCard>

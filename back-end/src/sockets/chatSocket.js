@@ -90,11 +90,23 @@ const emitMessagesCleared = ({ conversationPayloads = [] }) => {
   })
 }
 
+const emitMessageDeleted = ({ conversationPayloads = [], messageId }) => {
+  if (!chatIoInstance) return
+
+  conversationPayloads.forEach(({ userId, conversation }) => {
+    chatIoInstance.to(buildUserRoom(userId)).emit('conversation:message-deleted', {
+      conversation,
+      messageId
+    })
+  })
+}
+
 export const chatSocket = {
   initializeChatSocket,
   emitConversationCreated,
   emitMessageCreated,
   emitMessagesCleared,
+  emitMessageDeleted,
   buildUserRoom,
   buildConversationRoom
 }

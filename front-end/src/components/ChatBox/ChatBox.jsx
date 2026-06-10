@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import Box from '@mui/material/Box'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
@@ -7,12 +8,15 @@ import Paper from '@mui/material/Paper'
 import Button from '@mui/material/Button'
 import Tooltip from '@mui/material/Tooltip'
 import Chip from '@mui/material/Chip'
+import Menu from '@mui/material/Menu'
+import MenuItem from '@mui/material/MenuItem'
 import SendIcon from '@mui/icons-material/Send'
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord'
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded'
 import ForumRoundedIcon from '@mui/icons-material/ForumRounded'
 import PhotoRoundedIcon from '@mui/icons-material/PhotoRounded'
 import CircularProgress from '@mui/material/CircularProgress'
+import MoreVertRoundedIcon from '@mui/icons-material/MoreVertRounded'
 
 import VisuallyHiddenInput from '~/components/Form/VisuallyHiddenInput'
 
@@ -35,6 +39,12 @@ const renderChatContent = (value = '') => {
     .replace(/\*/g, '')
 }
 
+const getParticipantRoleLabel = (role) => {
+  if (role === 'doctor') return 'Bác sĩ'
+  if (role === 'patient') return 'Bệnh nhân'
+  return null
+}
+
 function ChatBox({
   activeConversation,
   messages = [],
@@ -46,7 +56,6 @@ function ChatBox({
   emptyDescription = 'Chon mot cuoc tro chuyen de xem lich su nhan tin va bat dau phan hoi.',
   emptyIcon,
   statusLabel = 'Online',
-  statusText = 'Dang san sang tro chuyen theo thoi gian thuc',
   inactiveStatusText = 'Chon mot cuoc tro chuyen de bat dau',
   messageInput,
   onMessageInputChange,
@@ -55,6 +64,8 @@ function ChatBox({
   onSelectImage,
   onRemoveSelectedImage,
   onClearMessages,
+  onDeleteMessage,
+  canDeleteMessage,
   selectedImageFile,
   selectedImagePreview,
   messagesEndRef,
@@ -68,7 +79,28 @@ function ChatBox({
   isSending = false
 }) {
   const participant = activeConversation?.participant
+  const participantRoleLabel = getParticipantRoleLabel(participant?.role)
   const resolvedEmptyIcon = emptyIcon || <ForumRoundedIcon sx={{ fontSize: 34 }} />
+  const [messageMenuAnchorEl, setMessageMenuAnchorEl] = useState(null)
+  const [selectedMessage, setSelectedMessage] = useState(null)
+
+  const handleOpenMessageMenu = (event, message) => {
+    event.stopPropagation()
+    setMessageMenuAnchorEl(event.currentTarget)
+    setSelectedMessage(message)
+  }
+
+  const handleCloseMessageMenu = () => {
+    setMessageMenuAnchorEl(null)
+    setSelectedMessage(null)
+  }
+
+  const handleDeleteSelectedMessage = async () => {
+    if (!selectedMessage || !onDeleteMessage) return
+    const messageToDelete = selectedMessage
+    handleCloseMessageMenu()
+    await onDeleteMessage(messageToDelete)
+  }
 
   return (
     <Paper elevation={0} sx={{ height: '100%', display: 'flex', flexDirection: 'column', borderRadius: '28px', overflow: 'hidden', border: '1px solid', borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(148, 163, 184, 0.14)' : 'rgba(148, 163, 184, 0.18)', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(8, 15, 29, 0.76)' : 'rgba(255, 255, 255, 0.74)', backdropFilter: 'blur(18px)', boxShadow: '0 22px 60px rgba(15, 23, 42, 0.12)' }}>
@@ -79,11 +111,11 @@ function ChatBox({
           </Avatar>
 
           <Box sx={{ minWidth: 0 }}>
-            <Typography sx={{ fontSize: '1.02rem', fontWeight: 800, color: (theme) => theme.palette.mode === 'dark' ? '#f8fafc' : '#0f172a' }}>
+            <Typography sx={{ fontSize: '1.02rem', lineHeight: 1.18, fontWeight: 700, letterSpacing: '-0.015em', color: (theme) => theme.palette.mode === 'dark' ? '#f8fafc' : '#0f172a' }}>
               {participant?.displayName || emptyTitle}
             </Typography>
             <Typography noWrap sx={{ mt: 0.3, fontSize: '0.84rem', color: (theme) => theme.palette.mode === 'dark' ? '#94a3b8' : '#64748b' }}>
-              {activeConversation ? statusText : inactiveStatusText}
+              {activeConversation ? (participantRoleLabel || participantFallbackLabel) : inactiveStatusText}
             </Typography>
           </Box>
         </Box>
@@ -94,13 +126,15 @@ function ChatBox({
             label={statusLabel}
             sx={{ display: { xs: 'none', sm: 'inline-flex' }, height: 32, borderRadius: '999px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(34, 197, 94, 0.14)' : '#ecfdf5', color: (theme) => theme.palette.mode === 'dark' ? '#86efac' : '#166534', '& .MuiChip-icon': { color: 'inherit' } }}
           />
-          <Tooltip title='Xoa toan bo tin nhan'>
-            <span>
-              <IconButton onClick={onClearMessages} disabled={!canClearMessages} sx={{ width: 42, height: 42, borderRadius: '14px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(30, 41, 59, 0.88)' : 'rgba(15, 23, 42, 0.05)', color: (theme) => theme.palette.mode === 'dark' ? '#fca5a5' : '#b91c1c', border: '1px solid', borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(248, 113, 113, 0.14)' : 'rgba(239, 68, 68, 0.12)' }}>
-                <DeleteOutlineRoundedIcon />
-              </IconButton>
-            </span>
-          </Tooltip>
+          {onClearMessages && (
+            <Tooltip title='Xóa toàn bộ tin nhắn'>
+              <span>
+                <IconButton onClick={onClearMessages} disabled={!canClearMessages} sx={{ width: 42, height: 42, borderRadius: '14px', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(30, 41, 59, 0.88)' : 'rgba(15, 23, 42, 0.05)', color: (theme) => theme.palette.mode === 'dark' ? '#fca5a5' : '#b91c1c', border: '1px solid', borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(248, 113, 113, 0.14)' : 'rgba(239, 68, 68, 0.12)' }}>
+                  <DeleteOutlineRoundedIcon />
+                </IconButton>
+              </span>
+            </Tooltip>
+          )}
         </Box>
       </Box>
 
@@ -111,7 +145,7 @@ function ChatBox({
               <Box sx={{ width: 72, height: 72, mx: 'auto', mb: 2, borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(56, 189, 248, 0.12)' : '#e0f2fe', color: '#0284c7' }}>
                 {resolvedEmptyIcon}
               </Box>
-              <Typography sx={{ fontSize: '1.1rem', fontWeight: 800, color: (theme) => theme.palette.mode === 'dark' ? '#f8fafc' : '#0f172a' }}>
+              <Typography sx={{ fontSize: '1.1rem', lineHeight: 1.18, fontWeight: 700, letterSpacing: '-0.015em', color: (theme) => theme.palette.mode === 'dark' ? '#f8fafc' : '#0f172a' }}>
                 {emptyTitle}
               </Typography>
               <Typography sx={{ mt: 1, lineHeight: 1.7, color: (theme) => theme.palette.mode === 'dark' ? '#94a3b8' : '#64748b' }}>
@@ -130,7 +164,24 @@ function ChatBox({
               <Box sx={{ maxWidth: { xs: '92%', sm: '76%' }, px: 1.8, py: 1.4, borderRadius: isMe ? '22px 22px 8px 22px' : '22px 22px 22px 8px', bgcolor: (theme) => isMe ? (theme.palette.mode === 'dark' ? '#38bdf8' : '#0f172a') : (theme.palette.mode === 'dark' ? 'rgba(30, 41, 59, 0.96)' : '#ffffff'), color: (theme) => isMe ? (theme.palette.mode === 'dark' ? '#06121f' : '#f8fafc') : (theme.palette.mode === 'dark' ? '#e2e8f0' : '#0f172a'), border: '1px solid', borderColor: (theme) => isMe ? (theme.palette.mode === 'dark' ? 'rgba(125, 211, 252, 0.3)' : 'transparent') : (theme.palette.mode === 'dark' ? 'rgba(148, 163, 184, 0.24)' : 'rgba(148, 163, 184, 0.20)'), boxShadow: (theme) => isMe ? (theme.palette.mode === 'dark' ? '0 14px 32px rgba(14, 165, 233, 0.16)' : '0 16px 32px rgba(15, 23, 42, 0.12)') : (theme.palette.mode === 'dark' ? '0 16px 34px rgba(2, 6, 23, 0.28)' : '0 14px 30px rgba(15, 23, 42, 0.08)') }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, mb: 0.8 }}>
                   <Typography sx={{ fontSize: '0.84rem', fontWeight: 800, opacity: 0.92 }}>{senderName}</Typography>
-                  <Typography sx={{ fontSize: '0.74rem', opacity: 0.72 }}>{formatMessageTime(chat.createdAt)}</Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
+                    <Typography sx={{ fontSize: '0.74rem', opacity: 0.72 }}>{formatMessageTime(chat.createdAt)}</Typography>
+                    {onDeleteMessage && canDeleteMessage?.(chat) && (
+                      <IconButton
+                        size='small'
+                        onClick={(event) => handleOpenMessageMenu(event, chat)}
+                        sx={{
+                          width: 24,
+                          height: 24,
+                          color: 'inherit',
+                          opacity: 0.72,
+                          '&:hover': { opacity: 1, bgcolor: 'rgba(148, 163, 184, 0.18)' }
+                        }}
+                      >
+                        <MoreVertRoundedIcon sx={{ fontSize: '1rem' }} />
+                      </IconButton>
+                    )}
+                  </Box>
                 </Box>
 
                 {chat.content && (
@@ -154,6 +205,19 @@ function ChatBox({
         })}
         <Box ref={messagesEndRef} />
       </Box>
+
+      <Menu
+        anchorEl={messageMenuAnchorEl}
+        open={Boolean(messageMenuAnchorEl)}
+        onClose={handleCloseMessageMenu}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <MenuItem onClick={handleDeleteSelectedMessage} sx={{ color: '#b91c1c', gap: 1 }}>
+          <DeleteOutlineRoundedIcon fontSize='small' />
+          Xóa tin nhắn
+        </MenuItem>
+      </Menu>
 
       <Box sx={{ px: { xs: 1.5, md: 2 }, py: { xs: 1.5, md: 1.75 }, borderTop: '1px solid', borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(148, 163, 184, 0.12)' : 'rgba(148, 163, 184, 0.16)', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(15, 23, 42, 0.82)' : 'rgba(248, 250, 252, 0.86)' }}>
         {selectedImagePreview && (

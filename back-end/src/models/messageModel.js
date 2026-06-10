@@ -81,6 +81,17 @@ const deleteManyByConversationId = async (conversationId) => {
   }
 }
 
+const softDeleteById = async (messageId) => {
+  try {
+    return await GET_DB().collection(MESSAGE_COLLECTION_NAME).updateOne(
+      { _id: new ObjectId(String(messageId)), _destroy: false },
+      { $set: { _destroy: true } }
+    )
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 export const messageModel = {
   MESSAGE_COLLECTION_NAME,
   MESSAGE_COLLECTION_SCHEMA,
@@ -88,5 +99,6 @@ export const messageModel = {
   findManyByConversationId,
   findLatestByConversationId,
   findOneById,
-  deleteManyByConversationId
+  deleteManyByConversationId,
+  softDeleteById
 }

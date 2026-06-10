@@ -1,12 +1,13 @@
 import { env } from "./environment"
-let apiRoot = ''
 
-if (import.meta.env.MODE === 'production') {
-  apiRoot = env.WEBSITE_DOMAIN_PRODUCTION
+const normalizeUrl = (url) => (url || '').replace(/\/$/, '')
+
+const apiRootByMode = {
+  production: env.API_ROOT_PRODUCTION || env.WEBSITE_DOMAIN_PRODUCTION,
+  development: env.API_ROOT_DEVELOPMENT || env.WEBSITE_DOMAIN_DEVELOPMENT
 }
-if (import.meta.env.MODE === 'development') {
-  apiRoot = env.WEBSITE_DOMAIN_DEVELOPMENT
-}
+
+const apiRoot = normalizeUrl(apiRootByMode[import.meta.env.MODE] || apiRootByMode.development)
 
 export const API_ROOT = apiRoot
 

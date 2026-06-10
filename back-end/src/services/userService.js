@@ -12,6 +12,7 @@ import { StatusCodes } from 'http-status-codes'
 import { JwtProvider } from '~/providers/JwtProvider'
 import { BrevoProvider } from '~/providers/BrevoProvider'
 import { CloudinaryProvider } from '~/providers/CloudinaryProvider'
+import { getWebsiteDomain } from '~/utils/envHelpers'
 
 const userService = {
   getProfile: async (userId) => {
@@ -63,7 +64,7 @@ const userService = {
       const getNewUser = await userModel.createNew(newUser)
 
       // Gửi mail xác thực
-      const verificationLink = `${env.WEBSITE_DOMAIN_DEVELOPMENT}/account/verification?email=${getNewUser.email}&token=${getNewUser.verifyToken}`
+      const verificationLink = `${getWebsiteDomain()}/account/verification?email=${getNewUser.email}&token=${getNewUser.verifyToken}`
       const customSubject = 'Xác thực email tài khoản'
       const htmlContent = `
         <h2>Xác thực email của bạn</h2>

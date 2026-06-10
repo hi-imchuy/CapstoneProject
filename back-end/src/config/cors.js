@@ -2,6 +2,12 @@ import { WHITELIST_DOMAINS } from '~/utils/constants'
 import { env } from '~/config/environment'
 import { StatusCodes } from 'http-status-codes'
 import ApiError from '~/utils/ApiError'
+import { getWebsiteDomain } from '~/utils/envHelpers'
+
+const allowedDomains = [
+  ...(WHITELIST_DOMAINS || []),
+  getWebsiteDomain()
+].filter(Boolean)
 
 // Cấu hình CORS Option trong dự án thực tế (Video số 62 trong chuỗi MERN Stack Pro)
 export const corsOptions = {
@@ -14,7 +20,7 @@ export const corsOptions = {
     }
 
     // Kiểm tra dem origin có phải là domain được chấp nhận hay không
-    if (WHITELIST_DOMAINS.includes(origin)) {
+    if (allowedDomains.includes(origin)) {
       return callback(null, true)
     }
 

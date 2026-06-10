@@ -10,6 +10,7 @@ import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import AddRoundedIcon from '@mui/icons-material/AddRounded'
 import SmartToyRoundedIcon from '@mui/icons-material/SmartToyRounded'
+import { useConfirm } from 'material-ui-confirm'
 
 import {
   clearAIConversationMessagesAPI,
@@ -57,6 +58,7 @@ const formatConversationTime = (value) => {
 }
 
 function AIChat() {
+  const confirmDeleteMessages = useConfirm()
   const [conversations, setConversations] = useState([])
   const [activeConversationId, setActiveConversationId] = useState('')
   const [messageInput, setMessageInput] = useState('')
@@ -250,6 +252,18 @@ function AIChat() {
 
   const handleClearMessages = async () => {
     if (!activeConversationId || isSending) return
+
+    try {
+      await confirmDeleteMessages({
+        title: 'Xóa tin nhắn với AI?',
+        description: 'Toàn bộ tin nhắn trong cuộc trò chuyện này sẽ bị xóa. Hành động này không thể hoàn tác.',
+        confirmationText: 'Xóa tin nhắn',
+        cancellationText: 'Hủy'
+      })
+    } catch {
+      return
+    }
+
     const updatedConversation = await clearAIConversationMessagesAPI(activeConversationId)
 
     setConversations((current) => sortConversations(current.map((item) => (
@@ -340,7 +354,6 @@ function AIChat() {
             emptyDescription='Tạo một cuộc trò chuyện mới để bắt đầu hỏi trợ lý da liễu.'
             emptyIcon={<SmartToyRoundedIcon sx={{ fontSize: 34 }} />}
             statusLabel={isSending ? 'Đang trả lời' : 'Sẵn sàng'}
-            statusText={isSending ? 'Trợ lý AI đang xử lý câu hỏi...' : 'Trợ lý tư vấn thông tin da liễu'}
             inactiveStatusText='Tạo một cuộc trò chuyện để bắt đầu'
             messageInput={messageInput}
             onMessageInputChange={setMessageInput}
@@ -381,7 +394,7 @@ function AIChat() {
                   <SmartToyRoundedIcon />
                 </Avatar>
                 <Box sx={{ minWidth: 0 }}>
-                  <Typography sx={{ fontSize: '1rem', fontWeight: 800, color: (theme) => theme.palette.mode === 'dark' ? '#f8fafc' : '#0f172a' }}>
+                  <Typography sx={{ fontSize: '1rem', lineHeight: 1.18, fontWeight: 700, letterSpacing: '-0.015em', color: (theme) => theme.palette.mode === 'dark' ? '#f8fafc' : '#0f172a' }}>
                     Hội thoại với AI
                   </Typography>
                   <Typography sx={{ fontSize: '0.8rem', color: (theme) => theme.palette.mode === 'dark' ? '#94a3b8' : '#64748b' }}>
@@ -446,7 +459,9 @@ function AIChat() {
                             handleStartEditing(conversation)
                           }}
                           sx={{
-                            fontWeight: 800,
+                            lineHeight: 1.18,
+                            fontWeight: 700,
+                            letterSpacing: '-0.015em',
                             color: (theme) => theme.palette.mode === 'dark' ? '#f8fafc' : '#0f172a',
                             userSelect: 'none'
                           }}

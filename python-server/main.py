@@ -4,6 +4,7 @@
 from contextlib import asynccontextmanager
 from io import BytesIO
 import json
+import os
 from pathlib import Path
 from threading import Lock
 from typing import List
@@ -12,9 +13,11 @@ from urllib.parse import urlparse
 
 import requests
 import supervision as sv
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi import HTTPException
 from fastapi import Response
+from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image
 from PIL import UnidentifiedImageError
 from pydantic import BaseModel
@@ -25,6 +28,8 @@ from rag_chatbot import RagConfigurationError
 
 
 BASE_DIR = Path(__file__).resolve().parent
+load_dotenv(BASE_DIR / ".env")
+
 MODEL_PATH = BASE_DIR / "model_DETR" / "checkpoint_best_ema.pth"
 REQUEST_TIMEOUT_SECONDS = 20
 DETECTION_THRESHOLD = 0.25
@@ -76,6 +81,27 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Skin Disease Detection RF-DETR Server", lifespan=lifespan)
+
+
+def normalize_url(url: str | None):
+  return (url or "").rstrip("/")
+
+
+def get_website_domain():
+  if os.getenv("BUILD_MODE") == "production":
+    return normalize_url(os.getenv("WEBSITE_DOMAIN_PRODUCTION"))
+  return normalize_url(os.getenv("WEBSITE_DOMAIN_DEVELOPMENT"))
+
+
+allowed_origin = get_website_domain()
+if allowed_origin:
+  app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[allowed_origin],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+  )
 
 
 @app.get("/health")

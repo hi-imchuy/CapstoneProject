@@ -1,10 +1,10 @@
 import { StatusCodes } from 'http-status-codes'
 
-import { env } from '~/config/environment'
 import { aiConversationModel } from '~/models/aiConversationModel'
 import { aiMessageModel } from '~/models/aiMessageModel'
 import { userModel } from '~/models/userModel'
 import ApiError from '~/utils/ApiError'
+import { getPythonServerUrl } from '~/utils/envHelpers'
 
 const DEFAULT_CONVERSATION_TITLE = 'Cuộc trò chuyện mới'
 
@@ -42,7 +42,7 @@ const ensureConversationOwner = async (userId, conversationId) => {
 }
 
 const callPythonChatServer = async (message, mode) => {
-  const pythonServerUrl = env.PYTHON_SERVER_URL || 'http://localhost:8000'
+  const pythonServerUrl = getPythonServerUrl()
 
   let response
   try {

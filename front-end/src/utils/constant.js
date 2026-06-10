@@ -3,8 +3,8 @@ import { env } from "./environment"
 const normalizeUrl = (url) => (url || '').replace(/\/$/, '')
 
 const apiRootByMode = {
-  production: env.API_ROOT_PRODUCTION || env.WEBSITE_DOMAIN_PRODUCTION,
-  development: env.API_ROOT_DEVELOPMENT || env.WEBSITE_DOMAIN_DEVELOPMENT
+  production: env.API_ROOT_PRODUCTION,
+  development: env.API_ROOT_DEVELOPMENT
 }
 
 const apiRoot = normalizeUrl(apiRootByMode[import.meta.env.MODE] || apiRootByMode.development)

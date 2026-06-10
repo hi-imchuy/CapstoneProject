@@ -3,3 +3,6 @@
  * YouTube: https://youtube.com/@trungquandev
  * "A bit of fragrance clings to the hand that gives flowers!"
  */
+
+// Add any extra trusted origins here. The active frontend domain is read from .env.
+export const WHITELIST_DOMAINS = []

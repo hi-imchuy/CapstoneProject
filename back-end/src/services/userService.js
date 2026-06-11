@@ -96,7 +96,11 @@ const userService = {
     try {
       const existingUser = await userModel.findOneByEmail(reqBody.email)
       if (!existingUser) throw new ApiError(StatusCodes.NOT_FOUND, 'Tài khoản không tìm thấy')
-      if (existingUser.isActive) throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Tài khoản đã được xác thực')
+      if (existingUser.isActive) {
+        delete existingUser.password
+        delete existingUser.verifyToken
+        return existingUser
+      }
       if (reqBody.token !== existingUser.verifyToken) throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Token xác thực không hợp lệ')
 
       // Update user

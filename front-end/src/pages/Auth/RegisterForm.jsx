@@ -64,7 +64,7 @@ function RegisterForm() {
     toast.promise(registerUserAPI({ email, password, role }),
       { pending: 'Đang đăng ký tài khoản...' }
     ).then(user => {
-      navigate(`/login?registeredEmail=${user.email}`)
+      navigate(`/login?registeredEmail=${encodeURIComponent(user.email)}`)
     })
   }
   return (

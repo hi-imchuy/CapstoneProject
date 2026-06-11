@@ -3,7 +3,6 @@ import { Routes, Route, Navigate, Outlet } from 'react-router-dom'
 
 import NotFound from './pages/404/NotFound'
 import Auth from '~/pages/Auth/Auth'
-import AccountVerification from './pages/Auth/AccountVerification'
 import { useDispatch, useSelector } from 'react-redux'
 import { fetchCurrentUserAPI, selectCurrentUser } from '~/redux/user/userSlice'
 import Settings from '~/pages/Settings/Settings'
@@ -63,7 +62,7 @@ function App() {
       {/* Authentication */}
       <Route path='/login' element={ <Auth key='auth-login' mode='login' /> } />
       <Route path='/register' element={ <Auth key='auth-register' mode='register' /> } />
-      <Route path='/account/verification' element={<AccountVerification/>} />
+      <Route path='/forgot-password' element={ <Auth key='auth-forgot-password' mode='forgot-password' /> } />
 
       {/* 404 not found page */}
       <Route path='*' element={ <NotFound/> } />

@@ -3,6 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom'
 import Box from '@mui/material/Box'
 import LoginForm from './LoginForm'
 import RegisterForm from './RegisterForm'
+import ForgotPasswordForm from './ForgotPasswordForm'
 import { useSelector } from 'react-redux'
 import { selectCurrentUser } from '~/redux/user/userSlice'
 import authBackground from '~/assets/auth/login-register-bg.jpg'
@@ -29,6 +30,7 @@ function Auth({ mode }) {
     }}>
       {mode === 'login' && <LoginForm key={`login-${location.search}`} />}
       {mode === 'register' && <RegisterForm key='register' />}
+      {mode === 'forgot-password' && <ForgotPasswordForm key='forgot-password' />}
     </Box>
   )
 }

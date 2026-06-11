@@ -4,7 +4,7 @@
  */
 
 import bcryptjs from 'bcryptjs'
-import { v4 as uuidv4 } from 'uuid'
+import crypto from 'crypto'
 import { env } from '~/config/environment'
 import { userModel } from '~/models/userModel'
 import ApiError from '~/utils/ApiError'
@@ -12,7 +12,57 @@ import { StatusCodes } from 'http-status-codes'
 import { JwtProvider } from '~/providers/JwtProvider'
 import { BrevoProvider } from '~/providers/BrevoProvider'
 import { CloudinaryProvider } from '~/providers/CloudinaryProvider'
-import { getWebsiteDomain } from '~/utils/envHelpers'
+
+const OTP_EXPIRY_MS = 10 * 60 * 1000
+const OTP_RESEND_COOLDOWN_MS = 60 * 1000
+const MAX_OTP_ATTEMPTS = 5
+
+const clearPasswordResetOtp = async (userId) => {
+  return await userModel.update(userId, {
+    verifyToken: null,
+    verifyTokenExpiresAt: null,
+    verifyTokenSentAt: null,
+    verifyTokenAttempts: 0,
+    updatedAt: Date.now()
+  })
+}
+
+const validatePasswordResetOtp = async (existingUser, otp) => {
+  if (!existingUser.verifyToken || !existingUser.verifyTokenExpiresAt) {
+    throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Mã OTP không tồn tại. Vui lòng yêu cầu mã mới')
+  }
+
+  if (Date.now() > new Date(existingUser.verifyTokenExpiresAt).getTime()) {
+    await clearPasswordResetOtp(existingUser._id)
+    throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Mã OTP đã hết hạn. Vui lòng yêu cầu mã mới')
+  }
+
+  const currentAttempts = Number(existingUser.verifyTokenAttempts || 0)
+
+  if (currentAttempts >= MAX_OTP_ATTEMPTS) {
+    await clearPasswordResetOtp(existingUser._id)
+    throw new ApiError(StatusCodes.TOO_MANY_REQUESTS, 'Bạn đã nhập sai quá nhiều lần. Vui lòng yêu cầu mã OTP mới')
+  }
+
+  if (otp !== existingUser.verifyToken) {
+    const nextAttempts = currentAttempts + 1
+
+    if (nextAttempts >= MAX_OTP_ATTEMPTS) {
+      await clearPasswordResetOtp(existingUser._id)
+      throw new ApiError(StatusCodes.TOO_MANY_REQUESTS, 'Bạn đã nhập sai 5 lần. Vui lòng yêu cầu mã OTP mới')
+    }
+
+    await userModel.update(existingUser._id, {
+      verifyTokenAttempts: nextAttempts,
+      updatedAt: Date.now()
+    })
+
+    throw new ApiError(
+      StatusCodes.NOT_ACCEPTABLE,
+      `Mã OTP không chính xác. Bạn còn ${MAX_OTP_ATTEMPTS - nextAttempts} lần thử`
+    )
+  }
+}
 
 const userService = {
   getProfile: async (userId) => {
@@ -47,9 +97,6 @@ const userService = {
       // Hash password
       const hashedPassword = bcryptjs.hashSync(reqBody.password, 8)
 
-      // Tạo verify token
-      const verifyToken = uuidv4()
-
       // Tạo user mới
       const newUser = {
         email: reqBody.email,
@@ -57,27 +104,12 @@ const userService = {
         username: nameFromEmail,
         displayName: nameFromEmail,
         role: reqBody.role || userModel.USER_ROLES.PATIENT,
-        verifyToken
+        isActive: true,
+        verifyToken: null
       }
 
       // Lưu vào DB
       const getNewUser = await userModel.createNew(newUser)
-
-      // Gửi mail xác thực
-      const verificationLink = `${getWebsiteDomain()}/account/verification?email=${getNewUser.email}&token=${getNewUser.verifyToken}`
-      const customSubject = 'Xác thực email tài khoản'
-      const htmlContent = `
-        <h2>Xác thực email của bạn</h2>
-        <p>Chào ${getNewUser.username},</p>
-        <p>Vui lòng nhấn vào link dưới đây để xác thực email của bạn:</p>
-        <a href="${verificationLink}" style="padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;">
-          Xác thực email
-        </a>
-        <p>Link sẽ hết hạn sau 24 giờ.</p>
-        <p>Nếu bạn không tạo tài khoản này, vui lòng bỏ qua email này.</p>
-      `
-
-      await BrevoProvider.sendEmail(getNewUser.email, customSubject, htmlContent)
 
       // Xóa sensitive fields trước khi return
       delete getNewUser.password
@@ -89,32 +121,90 @@ const userService = {
     }
   },
 
-  /**
-   * Xác thực email
-   */
-  verifyAccount: async (reqBody) => {
+  requestPasswordReset: async (reqBody) => {
     try {
       const existingUser = await userModel.findOneByEmail(reqBody.email)
       if (!existingUser) throw new ApiError(StatusCodes.NOT_FOUND, 'Tài khoản không tìm thấy')
-      if (existingUser.isActive) {
-        delete existingUser.password
-        delete existingUser.verifyToken
-        return existingUser
+
+      const sentAt = existingUser.verifyTokenSentAt
+        ? new Date(existingUser.verifyTokenSentAt).getTime()
+        : 0
+      const cooldownRemaining = OTP_RESEND_COOLDOWN_MS - (Date.now() - sentAt)
+
+      if (cooldownRemaining > 0) {
+        throw new ApiError(
+          StatusCodes.TOO_MANY_REQUESTS,
+          `Vui lòng chờ ${Math.ceil(cooldownRemaining / 1000)} giây trước khi gửi lại mã OTP`
+        )
       }
-      if (reqBody.token !== existingUser.verifyToken) throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Token xác thực không hợp lệ')
 
-      // Update user
-      const updateData = {
-        isActive: true,
-        verifyToken: null
+      const otp = crypto.randomInt(0, 1000000).toString().padStart(6, '0')
+      const now = Date.now()
+
+      await userModel.update(existingUser._id, {
+        verifyToken: otp,
+        verifyTokenExpiresAt: now + OTP_EXPIRY_MS,
+        verifyTokenSentAt: now,
+        verifyTokenAttempts: 0,
+        updatedAt: now
+      })
+
+      const htmlContent = `
+        <h2>Đặt lại mật khẩu</h2>
+        <p>Chào ${existingUser.displayName || existingUser.username},</p>
+        <p>Mã OTP đặt lại mật khẩu của bạn là:</p>
+        <p style="font-size: 32px; font-weight: bold; letter-spacing: 8px;">${otp}</p>
+        <p>Mã này sẽ hết hạn sau 10 phút.</p>
+        <p>Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.</p>
+      `
+
+      try {
+        await BrevoProvider.sendEmail(
+          existingUser.email,
+          'Mã OTP đặt lại mật khẩu',
+          htmlContent
+        )
+      } catch (error) {
+        await clearPasswordResetOtp(existingUser._id)
+        throw error
       }
-      const updatedUser = await userModel.update(existingUser._id, updateData)
 
-      // Xóa sensitive fields
-      delete updatedUser.password
-      delete updatedUser.verifyToken
+      return { email: existingUser.email, otpExpiresInSeconds: OTP_EXPIRY_MS / 1000 }
+    } catch (error) {
+      throw error
+    }
+  },
 
-      return updatedUser
+  verifyPasswordResetOtp: async (reqBody) => {
+    try {
+      const existingUser = await userModel.findOneByEmail(reqBody.email)
+      if (!existingUser) throw new ApiError(StatusCodes.NOT_FOUND, 'Tài khoản không tìm thấy')
+
+      await validatePasswordResetOtp(existingUser, reqBody.otp)
+
+      return { verified: true }
+    } catch (error) {
+      throw error
+    }
+  },
+
+  resetPassword: async (reqBody) => {
+    try {
+      const existingUser = await userModel.findOneByEmail(reqBody.email)
+      if (!existingUser) throw new ApiError(StatusCodes.NOT_FOUND, 'Tài khoản không tìm thấy')
+
+      await validatePasswordResetOtp(existingUser, reqBody.otp)
+
+      await userModel.update(existingUser._id, {
+        password: bcryptjs.hashSync(reqBody.newPassword, 8),
+        verifyToken: null,
+        verifyTokenExpiresAt: null,
+        verifyTokenSentAt: null,
+        verifyTokenAttempts: 0,
+        updatedAt: Date.now()
+      })
+
+      return { passwordReset: true }
     } catch (error) {
       throw error
     }

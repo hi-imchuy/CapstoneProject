@@ -19,8 +19,11 @@ const USER_COLLECTION_SCHEMA = Joi.object({
   avatar: Joi.string().default(null),
   role: Joi.string().valid(...Object.values(USER_ROLES)).default(USER_ROLES.PATIENT),
 
-  isActive: Joi.boolean().default(false),
-  verifyToken: Joi.string(),
+  isActive: Joi.boolean().default(true),
+  verifyToken: Joi.string().pattern(/^\d{6}$/).allow(null).default(null),
+  verifyTokenExpiresAt: Joi.date().timestamp('javascript').allow(null).default(null),
+  verifyTokenSentAt: Joi.date().timestamp('javascript').allow(null).default(null),
+  verifyTokenAttempts: Joi.number().integer().min(0).default(0),
 
   createdAt: Joi.date().timestamp('javascript').default(Date.now),
   updatedAt: Joi.date().timestamp('javascript').default(null),
@@ -107,19 +110,6 @@ const update = async (userId, updateData) => {
   }
 }
 
-const verifyEmail = async (verifyToken) => {
-  try {
-    const result = await GET_DB().collection(USER_COLLECTION_NAME).findOneAndUpdate(
-      { verifyToken },
-      { $set: { isActive: true, verifyToken: null, updatedAt: Date.now() } },
-      { returnDocument: 'after' }
-    )
-    return result
-  } catch (error) {
-    throw new Error(error)
-  }
-}
-
 export const userModel = {
   USER_COLLECTION_NAME,
   USER_COLLECTION_SCHEMA,
@@ -129,6 +119,5 @@ export const userModel = {
   findOneById,
   findOneByEmail,
   findManyByRole,
-  update,
-  verifyEmail
+  update
 }

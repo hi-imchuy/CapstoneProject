@@ -44,13 +44,27 @@ const userController = {
     }
   },
 
-  /**
-   * POST /v1/users/verify-account
-   * Xác thực email
-   */
-  verifyAccount: async (req, res, next) => {
+  requestPasswordReset: async (req, res, next) => {
     try {
-      const result = await userService.verifyAccount(req.body)
+      const result = await userService.requestPasswordReset(req.body)
+      res.status(StatusCodes.OK).json(result)
+    } catch (error) {
+      next(error)
+    }
+  },
+
+  verifyPasswordResetOtp: async (req, res, next) => {
+    try {
+      const result = await userService.verifyPasswordResetOtp(req.body)
+      res.status(StatusCodes.OK).json(result)
+    } catch (error) {
+      next(error)
+    }
+  },
+
+  resetPassword: async (req, res, next) => {
+    try {
+      const result = await userService.resetPassword(req.body)
       res.status(StatusCodes.OK).json(result)
     } catch (error) {
       next(error)

@@ -73,13 +73,22 @@ export const updateCardDetailsAPI = async (cardId, updateData) => {
 /** Users */
 export const registerUserAPI = async (data) => {
   const response = await authorizedAxiosInstance.post(`${API_ROOT}/v1/users`, data)
-  toast.success('Account created successfully! Please check and verify your account before logging in!', { theme: 'colored' })
+  toast.success('Tạo tài khoản thành công! Bạn có thể đăng nhập ngay.', { theme: 'colored' })
   return response.data
 }
 
-export const verifyUserAPI = async (data) => {
-  const response = await authorizedAxiosInstance.post(`${API_ROOT}/v1/users/verify-account`, data)
-  toast.success('Account verified successfully! Now you can login to enjoy our services! Have a good day!', { theme: 'colored' })
+export const requestPasswordResetAPI = async (data) => {
+  const response = await authorizedAxiosInstance.post(`${API_ROOT}/v1/users/forgot-password/request`, data)
+  return response.data
+}
+
+export const verifyPasswordResetOtpAPI = async (data) => {
+  const response = await authorizedAxiosInstance.post(`${API_ROOT}/v1/users/forgot-password/verify`, data)
+  return response.data
+}
+
+export const resetPasswordAPI = async (data) => {
+  const response = await authorizedAxiosInstance.post(`${API_ROOT}/v1/users/forgot-password/reset`, data)
   return response.data
 }
 

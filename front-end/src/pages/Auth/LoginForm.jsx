@@ -61,7 +61,7 @@ function LoginForm() {
   const { register, handleSubmit, formState: { errors } } = useForm()
   let [searchParams] = useSearchParams()
   const registeredEmail = searchParams.get('registeredEmail')
-  const verifiedEmail = searchParams.get('verifiedEmail')
+  const passwordReset = searchParams.get('passwordReset')
 
   const submitLogIn = (data) => {
     const { email, password } = data
@@ -94,17 +94,15 @@ function LoginForm() {
             Author: chauhuyne
           </Box>
           <Box sx={{ marginTop: '1em', display: 'flex', justifyContent: 'center', flexDirection: 'column', padding: '0 1em' }}>
-            {verifiedEmail &&
+            {passwordReset === 'true' &&
             <Alert severity="success" sx={{ '.MuiAlert-message': { overflow: 'hidden' } }}>
-              Email&nbsp;
-              <Typography component="span" sx={{ fontWeight: 'bold', '&:hover': { color: '#fdba26' } }}>{verifiedEmail}</Typography>
-              &nbsp;đã được xác thực.<br />Bạn có thể đăng nhập để sử dụng dịch vụ.
+              Đặt lại mật khẩu thành công. Bạn có thể đăng nhập bằng mật khẩu mới.
             </Alert>}
             {registeredEmail &&
             <Alert severity="info" sx={{ '.MuiAlert-message': { overflow: 'hidden' } }}>
-              Email xác thực đã được gửi đến&nbsp;
+              Tài khoản&nbsp;
               <Typography component="span" sx={{ fontWeight: 'bold', '&:hover': { color: '#fdba26' } }}>{registeredEmail}</Typography>
-              <br />Vui lòng kiểm tra hộp thư và xác thực tài khoản trước khi đăng nhập.
+              &nbsp;đã được tạo thành công. Bạn có thể đăng nhập ngay.
             </Alert>}
           </Box>
           <Box sx={{ padding: '0 1em 1em 1em' }}>
@@ -170,6 +168,13 @@ function LoginForm() {
                 color: '#2C3E50',
                 '&:hover': { color: '#ffbb39' }
               }}>Tạo tài khoản!</Typography>
+            </Link>
+            <Link to="/forgot-password" style={{ textDecoration: 'none' }}>
+              <Typography sx={{
+                mt: 1,
+                color: '#2C3E50',
+                '&:hover': { color: '#ffbb39' }
+              }}>Quên mật khẩu?</Typography>
             </Link>
           </Box>
         </MuiCard>

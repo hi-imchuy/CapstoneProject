@@ -278,7 +278,7 @@ function SkinDetection() {
       maxWidth={false}
       sx={{
         minHeight: '100vh',
-        bgcolor: '#f5f7fb',
+        bgcolor: (theme) => theme.palette.mode === 'dark' ? '#2C3E50' : '#f5f7fb',
         fontFamily: (theme) => theme.typography.fontFamily,
         '& .MuiTypography-root, & .MuiButton-root, & .MuiChip-root, & .MuiAlert-root': {
           fontFamily: 'inherit'
@@ -292,12 +292,22 @@ function SkinDetection() {
           <Chip
             icon={<ImageSearchRoundedIcon />}
             label="AI Skin Detection"
-            sx={{ width: 'fit-content', fontWeight: 600, borderRadius: 2 }}
+            sx={{
+              width: 'fit-content',
+              fontWeight: 600,
+              borderRadius: 2,
+              backgroundColor: 'white',
+              border: (theme) => theme.palette.mode === 'light' ? '1px solid rgba(44, 62, 80, 0.18)' : '1px solid rgba(255, 255, 255, 0.34)',
+              color: '#0f172a',
+              '& .MuiChip-icon': {
+                color: '#0284c7'
+              }
+            }}
           />
-          <Typography variant="h4" sx={{ fontWeight: 700, color: '#0f172a' }}>
+          <Typography variant="h4" sx={{ fontWeight: 700, color: (theme) => theme.palette.mode === 'dark' ? '#f8fafc' : '#0f172a' }}>
             Nhận diện bệnh da liễu
           </Typography>
-          <Typography sx={{ maxWidth: 720, color: '#64748b', lineHeight: 1.7 }}>
+          <Typography sx={{ maxWidth: 720, color: (theme) => theme.palette.mode === 'dark' ? '#cbd5e1' : '#64748b', lineHeight: 1.7 }}>
             Tải ảnh vùng da cần kiểm tra, sau đó bấm Nhận diện để hệ thống phân tích.
           </Typography>
         </Stack>
@@ -310,6 +320,7 @@ function SkinDetection() {
                 height: { xs: 'auto', md: 510 },
                 p: { xs: 2, md: 3 },
                 borderRadius: 2,
+                bgcolor: (theme) => theme.palette.mode === 'dark' ? '#f5f7fb' : '#ffffff',
                 boxShadow: '0 18px 45px rgba(15, 23, 42, 0.08)'
               }}
             >
@@ -376,7 +387,22 @@ function SkinDetection() {
                   disabled={!selectedFile || isDetecting}
                   onClick={handleDetect}
                   startIcon={isDetecting ? <CircularProgress size={18} color="inherit" /> : <ImageSearchRoundedIcon />}
-                  sx={{ minHeight: 48, borderRadius: 2, textTransform: 'none', fontWeight: 600 }}
+                  sx={{
+                    minHeight: 48,
+                    borderRadius: 2,
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    bgcolor: (theme) => theme.palette.mode === 'dark' ? '#0284c7' : '#2C3E50',
+                    color: '#ffffff',
+                    boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 12px 24px rgba(2, 132, 199, 0.28)' : undefined,
+                    '&:hover': {
+                      bgcolor: (theme) => theme.palette.mode === 'dark' ? '#0369a1' : '#1f2f3f'
+                    },
+                    '&.Mui-disabled': {
+                      bgcolor: (theme) => theme.palette.mode === 'dark' ? '#dbeafe' : 'rgba(44, 62, 80, 0.22)',
+                      color: (theme) => theme.palette.mode === 'dark' ? '#2563eb' : 'rgba(44, 62, 80, 0.56)'
+                    }
+                  }}
                 >
                   {isDetecting ? 'Đang nhận diện...' : 'Nhận diện'}
                 </Button>
@@ -403,6 +429,7 @@ function SkinDetection() {
                 height: { xs: 'auto', md: 510 },
                 p: { xs: 2, md: 3 },
                 borderRadius: 2,
+                bgcolor: (theme) => theme.palette.mode === 'dark' ? '#f5f7fb' : '#ffffff',
                 boxShadow: '0 18px 45px rgba(15, 23, 42, 0.08)',
                 overflow: 'hidden'
               }}
@@ -490,7 +517,7 @@ function SkinDetection() {
           </Grid>
         </Grid>
 
-        <Paper sx={{ mt: 3, p: { xs: 2, md: 3 }, borderRadius: 2, boxShadow: '0 18px 45px rgba(15, 23, 42, 0.08)' }}>
+        <Paper sx={{ mt: 3, p: { xs: 2, md: 3 }, borderRadius: 2, bgcolor: (theme) => theme.palette.mode === 'dark' ? '#f5f7fb' : '#ffffff', boxShadow: '0 18px 45px rgba(15, 23, 42, 0.08)' }}>
           <Stack direction="row" alignItems="center" justifyContent="space-between" gap={2} sx={{ mb: 2 }}>
             <Stack direction="row" alignItems="center" spacing={1}>
               <HistoryRoundedIcon sx={{ color: '#0284c7' }} />

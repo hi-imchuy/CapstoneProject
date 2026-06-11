@@ -13,8 +13,23 @@ const Router = express.Router()
 // POST /v1/users - Đăng ký user mới
 Router.post('/', validateUserInput.validateSignup, userController.createNew)
 
-// POST /v1/users/verify-account - Xác thực email
-Router.post('/verify-account', userController.verifyAccount)
+Router.post(
+  '/forgot-password/request',
+  validateUserInput.validateForgotPasswordRequest,
+  userController.requestPasswordReset
+)
+
+Router.post(
+  '/forgot-password/verify',
+  validateUserInput.validateForgotPasswordVerify,
+  userController.verifyPasswordResetOtp
+)
+
+Router.post(
+  '/forgot-password/reset',
+  validateUserInput.validateForgotPasswordReset,
+  userController.resetPassword
+)
 
 // POST /v1/users/login - Đăng nhập
 Router.post('/login', validateUserInput.validateLogin, userController.login)

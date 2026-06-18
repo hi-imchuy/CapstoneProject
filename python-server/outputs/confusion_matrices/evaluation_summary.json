@@ -1,0 +1,36 @@
+{
+  "checkpoint": "D:\\Ki10\\CapstoneProject\\python-server\\model_DETR\\checkpoint_best_ema.pth",
+  "dataset_dir": "D:\\Ki10\\CapstoneProject\\dermatological diseases.v6-update-sang-giang-mai.coco",
+  "threshold": 0.25,
+  "iou_threshold": 0.5,
+  "labels": [
+    "dermatological-diseases",
+    "BenhLyNiemMacMieng",
+    "GiangMai",
+    "MayDay",
+    "MunCoc",
+    "MunTrungCa",
+    "VayNen",
+    "ViemDaCoDia",
+    "ZonaThanKinh",
+    "background"
+  ],
+  "stats": {
+    "valid": {
+      "images": 89,
+      "ground_truth": 123,
+      "predictions": 163,
+      "matched": 93,
+      "false_negative": 30,
+      "false_positive": 70
+    },
+    "test": {
+      "images": 87,
+      "ground_truth": 120,
+      "predictions": 159,
+      "matched": 114,
+      "false_negative": 6,
+      "false_positive": 45
+    }
+  }
+}

@@ -52,6 +52,12 @@ class ChatRequest(BaseModel):
   topK: int | None = None
 
 
+class SuggestQuestionsRequest(BaseModel):
+  diseases: List[str]
+  count: int = 5
+  mode: str = "patient"
+
+
 def load_model():
   global model, model_load_error
   try:
@@ -279,3 +285,27 @@ def chat(request_body: ChatRequest):
     raise HTTPException(status_code=500, detail=str(error))
   except Exception as error:
     raise HTTPException(status_code=500, detail=f"RAG chat failed: {error}")
+
+
+@app.post("/suggest-questions")
+def suggest_questions(request_body: SuggestQuestionsRequest):
+  ensure_rag_ready()
+  diseases = [str(disease).strip() for disease in request_body.diseases if str(disease).strip()]
+  if not diseases:
+    raise HTTPException(status_code=422, detail="diseases must include at least one disease")
+
+  if request_body.count < 1 or request_body.count > 8:
+    raise HTTPException(status_code=422, detail="count must be between 1 and 8")
+
+  mode = request_body.mode if request_body.mode in ("patient", "doctor") else "patient"
+
+  try:
+    return rag_chatbot.generate_suggested_questions(
+      diseases=diseases,
+      count=request_body.count,
+      mode=mode
+    )
+  except RagConfigurationError as error:
+    raise HTTPException(status_code=500, detail=str(error))
+  except Exception as error:
+    raise HTTPException(status_code=500, detail=f"Suggested question generation failed: {error}")

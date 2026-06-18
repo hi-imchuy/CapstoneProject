@@ -1,7 +1,9 @@
 ﻿import argparse
 import json
 import os
+import random
 import re
+import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -22,6 +24,17 @@ DEFAULT_TOP_K = 6
 DEFAULT_NINE_ROUTER_BASE_URL = "http://localhost:20128/v1"
 DEFAULT_NINE_ROUTER_MODEL = "cx/gpt-5.5"
 LLM_REQUEST_TIMEOUT_SECONDS = 120
+INSUFFICIENT_INFO_ANSWER = "Mình chưa có đủ thông tin trong tài liệu được cung cấp về nội dung này."
+DETECTION_DISEASE_NAME_MAP = {
+  "BenhLyNiemMacMieng": "Bệnh lý niêm mạc miệng",
+  "GiangMai": "Giang mai",
+  "MayDay": "Mày đay",
+  "MunCoc": "Mụn cóc",
+  "MunTrungCa": "Mụn trứng cá",
+  "VayNen": "Vảy nến",
+  "ViemDaCoDia": "Viêm da cơ địa",
+  "ZonaThanKinh": "Zona thần kinh",
+}
 
 
 class RagConfigurationError(RuntimeError):
@@ -44,6 +57,16 @@ def load_environment():
 def normalize_text(value: str) -> str:
   value = value.lower()
   value = value.replace("_", " ")
+  return re.sub(r"\s+", " ", value).strip()
+
+
+def normalize_lookup_text(value: str) -> str:
+  value = DETECTION_DISEASE_NAME_MAP.get(str(value).strip(), str(value))
+  value = unicodedata.normalize("NFD", value)
+  value = "".join(char for char in value if unicodedata.category(char) != "Mn")
+  value = value.replace("đ", "d").replace("Đ", "D")
+  value = re.sub(r"(?<!^)(?=[A-Z])", " ", value)
+  value = value.lower().replace("_", " ").replace("-", " ")
   return re.sub(r"\s+", " ", value).strip()
 
 
@@ -155,6 +178,7 @@ class RagChatbot:
     self._client = None
     self._collection = None
     self._embedding_function = None
+    self._supported_diseases: Optional[List[str]] = None
 
   def load_chunks(self) -> List[Dict[str, Any]]:
     if not self.data_path.exists():
@@ -305,6 +329,16 @@ class RagChatbot:
       matches[field] = sorted(term for term in terms if normalize_text(term) in normalized)
     matches["diseases"] = sorted(term for term in diseases if term and normalize_text(term) in normalized)
     return matches
+
+  def supported_diseases(self) -> List[str]:
+    if self._supported_diseases is None:
+      chunks = self.load_chunks()
+      self._supported_diseases = sorted({
+        str(chunk.get("disease", "")).strip()
+        for chunk in chunks
+        if str(chunk.get("disease", "")).strip()
+      })
+    return self._supported_diseases
 
   def metadata_score(self, chunk: Dict[str, Any], query_tags: Dict[str, List[str]], mode: str) -> float:
     score = 0.0
@@ -457,19 +491,32 @@ class RagChatbot:
     base_url = (os.getenv("NINE_ROUTER_BASE_URL") or DEFAULT_NINE_ROUTER_BASE_URL).rstrip("/")
     model = os.getenv("NINE_ROUTER_MODEL") or DEFAULT_NINE_ROUTER_MODEL
     context = self.build_context(results, mode)
+    supported_diseases = ", ".join(self.supported_diseases())
+    retrieved_diseases = ", ".join(sorted({
+      str(result.chunk.get("disease", "")).strip()
+      for result in results
+      if str(result.chunk.get("disease", "")).strip()
+    }))
     system_prompt = (
       "You are a Vietnamese dermatology information chatbot. "
       "Always answer the end user in natural, friendly, easy-to-understand Vietnamese. "
       "Use only the provided RAG context. Do not invent facts outside the context. "
+      f"The knowledge base only supports these diseases: {supported_diseases}. "
+      "Silently check whether the user's exact disease or topic is directly supported by the RAG context before answering. "
+      f"If the user asks about a disease or topic that is not directly covered by the RAG context, answer exactly: {INSUFFICIENT_INFO_ANSWER} "
+      "Do not add explanations, general disease information, safety advice, or follow-up questions in that case. "
       "Output plain text only. Do not use Markdown. Do not use **bold**, *, # headings, or '-' bullet markers. "
       "If a list is needed, use short paragraphs or numbered items like 1., 2., 3. "
       "Do not return JSON. Do not list metadata. Do not mention chunks, source numbers, or internal retrieval details. "
       "Do not make a definitive diagnosis, prescribe medication, or provide prescription drug dosing instructions. "
-      "If the context is insufficient, clearly say in Vietnamese that there is not enough information. "
-      "If there are warning signs or the topic requires a clinician, advise the user in Vietnamese to seek appropriate medical care."
+      f"If the context is insufficient, answer exactly: {INSUFFICIENT_INFO_ANSWER} "
+      "Only when the context is sufficient and directly answers the user's topic, advise the user in Vietnamese to seek appropriate medical care if there are warning signs or the topic requires a clinician."
     )
     user_prompt = (
       "Format rule: plain text for a chat bubble only. Never include **, *, #, or '-' bullet markers.\n"
+      f"Insufficient-information answer rule: if the RAG context does not directly answer the user's exact disease/topic, return only this sentence and nothing else: {INSUFFICIENT_INFO_ANSWER}\n"
+      f"Supported diseases in the knowledge base: {supported_diseases}\n"
+      f"Diseases found in retrieved context: {retrieved_diseases or 'None'}\n"
       f"Mode: {mode}\n"
       f"User question: {message}\n\n"
       f"RAG context:\n{context}\n\n"
@@ -531,11 +578,83 @@ class RagChatbot:
     cleaned = cleaned.replace("**", "").replace("*", "")
     return cleaned.strip()
 
+  def generate_suggested_questions(
+    self,
+    diseases: List[str],
+    count: int = 5,
+    mode: str = "patient"
+  ) -> Dict[str, Any]:
+    normalized_diseases = []
+    disease_lookup_terms = set()
+    for disease in diseases:
+      disease_name = str(disease or "").strip()
+      if disease_name and disease_name not in normalized_diseases:
+        normalized_diseases.append(disease_name)
+      lookup_name = normalize_lookup_text(disease_name)
+      if lookup_name:
+        disease_lookup_terms.add(lookup_name)
+
+    if not normalized_diseases:
+      raise RagConfigurationError("At least one detected disease is required")
+
+    requested_count = min(max(int(count or 5), 1), 8)
+    mode = mode if mode in ("patient", "doctor") else "patient"
+    chunks = self.load_chunks()
+    candidates = []
+
+    for chunk in chunks:
+      chunk_disease_terms = {
+        normalize_lookup_text(chunk.get("disease", "")),
+        *[normalize_lookup_text(alias) for alias in as_list(chunk.get("aliases", []))]
+      }
+      if not disease_lookup_terms.intersection(chunk_disease_terms):
+        continue
+      if mode == "patient" and chunk.get("access_level") == "clinician_only":
+        continue
+
+      chunk_questions = as_list(chunk.get("questions", []))
+      if not chunk_questions:
+        continue
+
+      priority = int(chunk.get("retrieval_priority", 0) or 0)
+      for question in chunk_questions:
+        cleaned_question = re.sub(r"^\d+[\.)]\s*", "", str(question or "")).strip()
+        if cleaned_question:
+          candidates.append((priority, cleaned_question))
+
+    high_priority_questions = [
+      question
+      for priority, question in candidates
+      if priority >= 3
+    ]
+    fallback_questions = [question for _, question in candidates]
+    source_questions = high_priority_questions or fallback_questions
+
+    deduped_questions = []
+    seen_questions = set()
+    for question in source_questions:
+      normalized_question = normalize_lookup_text(question)
+      if normalized_question in seen_questions:
+        continue
+      seen_questions.add(normalized_question)
+      deduped_questions.append(question)
+
+    if len(deduped_questions) < requested_count:
+      raise RagConfigurationError("RAG data does not contain enough suggested questions for detected diseases")
+
+    random.shuffle(deduped_questions)
+
+    return {
+      "questions": deduped_questions[:requested_count],
+      "diseases": normalized_diseases,
+      "mode": mode,
+    }
+
   def chat(self, message: str, mode: str = "patient", top_k: Optional[int] = None) -> Dict[str, Any]:
     results = self.retrieve(message, mode=mode, top_k=top_k)
     if not results:
       return {
-        "answer": "Toi chua tim thay thong tin phu hop trong du lieu hien co. Ban nen mo ta ro hon trieu chung, vi tri ton thuong va thoi gian xuat hien de toi ho tro tot hon.",
+        "answer": INSUFFICIENT_INFO_ANSWER,
         "rawAnswer": "",
         "mode": mode,
         "safetyFlags": [],

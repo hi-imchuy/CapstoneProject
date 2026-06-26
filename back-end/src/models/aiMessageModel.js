@@ -62,6 +62,25 @@ const findLatestByConversationId = async (conversationId) => {
   }
 }
 
+const findLatestManyByConversationId = async (conversationId, limit = 20) => {
+  try {
+    const limitedCount = Math.min(Math.max(Number(limit) || 20, 1), 50)
+    const messages = await GET_DB()
+      .collection(AI_MESSAGE_COLLECTION_NAME)
+      .find({
+        conversationId: String(conversationId),
+        _destroy: false
+      })
+      .sort({ createdAt: -1 })
+      .limit(limitedCount)
+      .toArray()
+
+    return messages.reverse()
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 const deleteManyByConversationId = async (conversationId) => {
   try {
     return await GET_DB().collection(AI_MESSAGE_COLLECTION_NAME).deleteMany({
@@ -79,5 +98,6 @@ export const aiMessageModel = {
   createNew,
   findManyByConversationId,
   findLatestByConversationId,
+  findLatestManyByConversationId,
   deleteManyByConversationId
 }

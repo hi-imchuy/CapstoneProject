@@ -9,6 +9,7 @@ const Router = express.Router()
 Router.use(authMiddleware.isAuthorized)
 
 Router.get('/', skinDetectionController.getHistory)
+Router.post('/suggest-questions', skinDetectionController.suggestQuestions)
 Router.post('/', multerUpdloadMiddleware.upload.single('image'), skinDetectionController.createNew)
 Router.delete('/:detectionId', skinDetectionController.deleteHistoryItem)
 

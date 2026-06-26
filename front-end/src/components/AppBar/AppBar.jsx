@@ -115,7 +115,15 @@ function AppBar() {
         {/* Xử lý hiển thị các thông báo */}
         {/* <Notifications /> */}
 
-        <Tooltip title="Help">
+        <Tooltip
+          title={
+            <>
+              Sinh viên thực hiện: Châu Hoàng Huy
+              <br />
+              Hỗ trợ xây dựng dữ liệu: Mỹ Huyền
+            </>
+          }
+        >
           <HelpOutlineIcon sx={{ cursor: 'pointer', color: (theme) => (theme.palette.mode === 'dark' ? '#2C3E50' : 'white') }} />
         </Tooltip>
 

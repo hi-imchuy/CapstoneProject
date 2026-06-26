@@ -6,6 +6,8 @@ import { userModel } from '~/models/userModel'
 import ApiError from '~/utils/ApiError'
 import { getPythonServerUrl } from '~/utils/envHelpers'
 
+const MAX_AI_HISTORY_MESSAGES = 20
+
 const DEFAULT_CONVERSATION_TITLE = 'Cuộc trò chuyện mới'
 
 const serializeMessage = (message) => ({
@@ -41,7 +43,19 @@ const ensureConversationOwner = async (userId, conversationId) => {
   return conversation
 }
 
-const callPythonChatServer = async (message, mode) => {
+const buildChatHistory = async (conversationId) => {
+  const messages = await aiMessageModel.findLatestManyByConversationId(
+    conversationId,
+    MAX_AI_HISTORY_MESSAGES
+  )
+
+  return messages.map((message) => ({
+    role: message.role,
+    content: message.content
+  }))
+}
+
+const callPythonChatServer = async (message, mode, history = []) => {
   const pythonServerUrl = getPythonServerUrl()
 
   let response
@@ -49,7 +63,7 @@ const callPythonChatServer = async (message, mode) => {
     response = await fetch(`${pythonServerUrl}/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message, mode })
+      body: JSON.stringify({ message, mode, history })
     })
   } catch (error) {
     throw new ApiError(StatusCodes.BAD_GATEWAY, 'Không kết nối được máy chủ AI')
@@ -116,6 +130,7 @@ const aiConversationService = {
     const currentUser = await ensureExistingActiveUser(userId)
     const conversation = await ensureConversationOwner(userId, conversationId)
     const content = reqBody.message.trim()
+    const history = await buildChatHistory(conversation._id)
 
     const userMessage = await aiMessageModel.createNew({
       conversationId: String(conversation._id),
@@ -124,7 +139,7 @@ const aiConversationService = {
     })
     await aiConversationModel.updateByIdAndUserId(conversationId, userId)
 
-    const answer = await callPythonChatServer(content, currentUser.role)
+    const answer = await callPythonChatServer(content, currentUser.role, history)
     const assistantMessage = await aiMessageModel.createNew({
       conversationId: String(conversation._id),
       role: aiMessageModel.AI_MESSAGE_ROLES.ASSISTANT,

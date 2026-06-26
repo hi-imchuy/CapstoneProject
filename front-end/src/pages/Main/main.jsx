@@ -8,6 +8,7 @@ import AppBar from '~/components/AppBar/AppBar'
 import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded'
 import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded'
 import mainImg from '~/assets/main/main-img.png'
+import { Link } from 'react-router-dom'
 
 const quickStats = [
   { value: 'Nhận diện và Chatbot', label: 'Nhanh - Chính xác' },
@@ -144,6 +145,8 @@ function Main() {
 
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
               <Button
+                component={Link}
+                to="/skin-detection"
                 variant="contained"
                 endIcon={<ArrowForwardRoundedIcon />}
                 sx={{
@@ -167,10 +170,12 @@ function Main() {
                   }
                 }}
               >
-                Bắt đầu ngay
+                Nhận diện ngay
               </Button>
 
               <Button
+                component={Link}
+                to="/chat/ai"
                 variant="outlined"
                 sx={{
                   minWidth: 180,
@@ -197,7 +202,7 @@ function Main() {
                   }
                 }}
               >
-                Khám phá tính năng
+                Chat cùng AI
               </Button>
             </Stack>
 

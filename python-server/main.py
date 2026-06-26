@@ -22,6 +22,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image
 from PIL import UnidentifiedImageError
 from pydantic import BaseModel
+from pydantic import Field
 from rfdetr import RFDETR
 
 from rag_chatbot import RagChatbot
@@ -46,10 +47,16 @@ class DetectionRequest(BaseModel):
   imageUrl: str
 
 
+class ChatHistoryMessage(BaseModel):
+  role: str
+  content: str
+
+
 class ChatRequest(BaseModel):
   message: str
   mode: str = "patient"
   topK: int | None = None
+  history: List[ChatHistoryMessage] = Field(default_factory=list)
 
 
 class SuggestQuestionsRequest(BaseModel):
@@ -147,6 +154,19 @@ def ensure_rag_ready():
       status_code=500,
       detail=f"RAG chatbot is not initialized: {rag_load_error or 'unknown error'}"
     )
+
+
+def normalize_chat_history(history: List[ChatHistoryMessage]) -> List[dict]:
+  normalized_history = []
+  for item in history[-20:]:
+    role = item.role if item.role in ("user", "assistant") else ""
+    content = item.content.strip()
+    if role and content:
+      normalized_history.append({
+        "role": role,
+        "content": content[:10000]
+      })
+  return normalized_history
 
 
 def validate_image_url(image_url: str):
@@ -280,7 +300,12 @@ def chat(request_body: ChatRequest):
     raise HTTPException(status_code=422, detail="topK must be between 1 and 12")
 
   try:
-    return rag_chatbot.chat(message, mode=mode, top_k=top_k)
+    return rag_chatbot.chat(
+      message,
+      mode=mode,
+      top_k=top_k,
+      history=normalize_chat_history(request_body.history)
+    )
   except RagConfigurationError as error:
     raise HTTPException(status_code=500, detail=str(error))
   except Exception as error:

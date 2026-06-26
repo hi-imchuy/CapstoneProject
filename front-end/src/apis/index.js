@@ -113,6 +113,11 @@ export const deleteSkinDetectionAPI = async (detectionId) => {
   return response.data
 }
 
+export const generateSkinDetectionQuestionsAPI = async (data) => {
+  const response = await authorizedAxiosInstance.post(`${API_ROOT}/v1/skin-detections/suggest-questions`, data)
+  return response.data
+}
+
 /** AI conversations */
 export const fetchAIConversationsAPI = async () => {
   const response = await authorizedAxiosInstance.get(`${API_ROOT}/v1/ai-conversations`)

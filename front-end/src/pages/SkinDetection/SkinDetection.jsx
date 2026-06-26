@@ -23,14 +23,45 @@ import RestartAltRoundedIcon from '@mui/icons-material/RestartAltRounded'
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded'
 import ZoomInRoundedIcon from '@mui/icons-material/ZoomInRounded'
 import ZoomOutRoundedIcon from '@mui/icons-material/ZoomOutRounded'
+import SmartToyRoundedIcon from '@mui/icons-material/SmartToyRounded'
 import { useConfirm } from 'material-ui-confirm'
 import AppBar from '~/components/AppBar/AppBar'
-import { createSkinDetectionAPI, deleteSkinDetectionAPI, fetchSkinDetectionsAPI } from '~/apis'
+import ChatBox from '~/components/ChatBox/ChatBox'
+import {
+  createAIConversationAPI,
+  createSkinDetectionAPI,
+  deleteSkinDetectionAPI,
+  fetchSkinDetectionsAPI,
+  generateSkinDetectionQuestionsAPI,
+  sendAIMessageAPI
+} from '~/apis'
 
 const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png']
 const MIN_IMAGE_ZOOM = 0.5
 const MAX_IMAGE_ZOOM = 4
 const IMAGE_ZOOM_STEP = 0.25
+const DEFAULT_AI_TITLE = 'Cuộc trò chuyện mới'
+const AI_PARTICIPANT = {
+  displayName: 'Trợ lý AI',
+  avatar: ''
+}
+
+const DISEASE_NAME_MAP = {
+  'dermatological-diseases': 'Bệnh Da Liễu',
+  BenhLyNiemMacMieng: 'Bệnh Lý Niêm Mạc Miệng',
+  GiangMai: 'Giang Mai',
+  MayDay: 'Mày Đay',
+  MunCoc: 'Mụn Cóc',
+  MunTrungCa: 'Mụn Trứng Cá',
+  VayNen: 'Vảy Nến',
+  ViemDaCoDia: 'Viêm Da Cơ Địa',
+  ZonaThanKinh: 'Zona Thần Kinh'
+}
+
+const getVietnameseDiseaseName = (diseaseName) => {
+  const normalizedName = String(diseaseName || '').trim()
+  return DISEASE_NAME_MAP[normalizedName] || normalizedName
+}
 
 function SkinDetection() {
   const confirmDeleteHistory = useConfirm()
@@ -47,8 +78,21 @@ function SkinDetection() {
   const [isImageViewerOpen, setIsImageViewerOpen] = useState(false)
   const [imageZoom, setImageZoom] = useState(1)
   const [viewerImageUrl, setViewerImageUrl] = useState('')
+  const [suggestedQuestions, setSuggestedQuestions] = useState([])
+  const [isLoadingSuggestedQuestions, setIsLoadingSuggestedQuestions] = useState(false)
+  const [suggestedQuestionsError, setSuggestedQuestionsError] = useState('')
+  const [embeddedConversation, setEmbeddedConversation] = useState(null)
+  const [embeddedMessages, setEmbeddedMessages] = useState([])
+  const [embeddedMessageInput, setEmbeddedMessageInput] = useState('')
+  const [isEmbeddedChatOpen, setIsEmbeddedChatOpen] = useState(false)
+  const [isEmbeddedSending, setIsEmbeddedSending] = useState(false)
+  const embeddedMessagesEndRef = useRef(null)
+  const suggestedQuestionsRequestRef = useRef(0)
 
   const hasDetections = Boolean(result?.cac_benh_nhan_dien?.length)
+  const embeddedChatConversation = embeddedConversation
+    ? { ...embeddedConversation, participant: AI_PARTICIPANT }
+    : null
 
   const sortedHistory = useMemo(() => {
     return [...history].sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0))
@@ -63,6 +107,65 @@ function SkinDetection() {
   useEffect(() => {
     loadHistory()
   }, [])
+
+  useEffect(() => {
+    embeddedMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+  }, [embeddedMessages.length, isEmbeddedSending])
+
+  const resetSuggestedQuestions = () => {
+    suggestedQuestionsRequestRef.current += 1
+    setSuggestedQuestions([])
+    setSuggestedQuestionsError('')
+    setIsLoadingSuggestedQuestions(false)
+  }
+
+  const resetEmbeddedChat = () => {
+    setEmbeddedConversation(null)
+    setEmbeddedMessages([])
+    setEmbeddedMessageInput('')
+    setIsEmbeddedChatOpen(false)
+    setIsEmbeddedSending(false)
+  }
+
+  const normalizeConversation = (conversation) => ({
+    ...conversation,
+    id: conversation._id
+  })
+
+  const getDetectedDiseaseNames = (detections = result?.cac_benh_nhan_dien || []) => {
+    return detections
+      .map((item) => getVietnameseDiseaseName(item.ten_benh))
+      .filter(Boolean)
+  }
+
+  const buildAdviceConversationTitle = (detections = result?.cac_benh_nhan_dien || []) => {
+    const diseaseNames = getDetectedDiseaseNames(detections)
+    if (!diseaseNames.length) return DEFAULT_AI_TITLE
+    return `Tư vấn: ${diseaseNames.slice(0, 2).join(', ')}${diseaseNames.length > 2 ? '...' : ''}`
+  }
+
+  const loadSuggestedQuestions = async (detectionResult) => {
+    const detections = detectionResult?.cac_benh_nhan_dien || []
+    if (!detections.length) return
+
+    const requestId = suggestedQuestionsRequestRef.current + 1
+    suggestedQuestionsRequestRef.current = requestId
+    setIsLoadingSuggestedQuestions(true)
+    setSuggestedQuestionsError('')
+    try {
+      const data = await generateSkinDetectionQuestionsAPI({ detections })
+      if (suggestedQuestionsRequestRef.current !== requestId) return
+      setSuggestedQuestions(Array.isArray(data?.questions) ? data.questions : [])
+    } catch {
+      if (suggestedQuestionsRequestRef.current !== requestId) return
+      setSuggestedQuestions([])
+      setSuggestedQuestionsError('Không tạo được câu hỏi gợi ý lúc này.')
+    } finally {
+      if (suggestedQuestionsRequestRef.current === requestId) {
+        setIsLoadingSuggestedQuestions(false)
+      }
+    }
+  }
 
   const loadHistory = async () => {
     setIsLoadingHistory(true)
@@ -79,6 +182,8 @@ function SkinDetection() {
   const handleFileChange = (file) => {
     setErrorMessage('')
     setResult(null)
+    resetSuggestedQuestions()
+    resetEmbeddedChat()
 
     if (!file) return
 
@@ -110,7 +215,10 @@ function SkinDetection() {
     try {
       const data = await createSkinDetectionAPI(formData)
       setResult(data)
+      resetSuggestedQuestions()
+      resetEmbeddedChat()
       setHistory((currentHistory) => [data, ...currentHistory])
+      loadSuggestedQuestions(data)
       if (previewUrl) URL.revokeObjectURL(previewUrl)
       setSelectedFile(null)
       setPreviewUrl('')
@@ -128,6 +236,8 @@ function SkinDetection() {
     setPreviewUrl('')
     setResult(null)
     setErrorMessage('')
+    resetSuggestedQuestions()
+    resetEmbeddedChat()
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
@@ -179,6 +289,80 @@ function SkinDetection() {
       setErrorMessage(error?.response?.data?.message || 'Xóa lịch sử nhận diện thất bại')
     } finally {
       setDeletingHistoryId('')
+    }
+  }
+
+  const sendEmbeddedMessage = async (conversation, content) => {
+    const conversationId = conversation?.id || conversation?._id
+    const trimmedContent = String(content || '').trim()
+    if (!conversationId || !trimmedContent || isEmbeddedSending) return
+
+    const optimisticMessage = {
+      _id: `temp-${Date.now()}`,
+      conversationId,
+      role: 'user',
+      content: trimmedContent,
+      createdAt: Date.now()
+    }
+
+    setEmbeddedMessageInput('')
+    setIsEmbeddedSending(true)
+    setEmbeddedMessages((currentMessages) => [...currentMessages, optimisticMessage])
+
+    try {
+      const response = await sendAIMessageAPI(conversationId, trimmedContent)
+      const nextConversation = normalizeConversation(response.conversation)
+      setEmbeddedConversation(nextConversation)
+      setEmbeddedMessages((currentMessages) => [
+        ...currentMessages.filter((message) => message._id !== optimisticMessage._id),
+        ...response.messages
+      ])
+    } catch {
+      setEmbeddedMessages((currentMessages) => currentMessages.filter(
+        (message) => message._id !== optimisticMessage._id
+      ))
+      setEmbeddedMessageInput(trimmedContent)
+      setErrorMessage('Gửi câu hỏi đến trợ lý AI thất bại.')
+    } finally {
+      setIsEmbeddedSending(false)
+    }
+  }
+
+  const handleSuggestedQuestionClick = async (question) => {
+    if (isEmbeddedSending) return
+
+    setErrorMessage('')
+    setIsEmbeddedChatOpen(true)
+    setEmbeddedMessageInput('')
+
+    try {
+      if (embeddedConversation) {
+        await sendEmbeddedMessage(embeddedConversation, question)
+        return
+      }
+
+      setEmbeddedMessages([])
+      const createdConversation = await createAIConversationAPI({
+        title: buildAdviceConversationTitle(result?.cac_benh_nhan_dien)
+      })
+      const normalizedConversation = normalizeConversation(createdConversation)
+      setEmbeddedConversation(normalizedConversation)
+      await sendEmbeddedMessage(normalizedConversation, question)
+    } catch {
+      setIsEmbeddedChatOpen(false)
+      setEmbeddedConversation(null)
+      setErrorMessage('Không tạo được cuộc trò chuyện AI mới.')
+    }
+  }
+
+  const handleEmbeddedSendMessage = async () => {
+    await sendEmbeddedMessage(embeddedConversation, embeddedMessageInput)
+  }
+
+  const handleEmbeddedInputKeyDown = async (event) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault()
+      await handleEmbeddedSendMessage()
     }
   }
 
@@ -245,7 +429,7 @@ function SkinDetection() {
                   wordBreak: 'break-word'
                 }}
               >
-                {item.ten_benh}
+                {getVietnameseDiseaseName(item.ten_benh)}
               </Typography>
               <Chip
                 label={`${Number(item.do_chinh_xac || 0).toFixed(2)}%`}
@@ -269,6 +453,60 @@ function SkinDetection() {
           </Box>
         ))}
       </Stack>
+    )
+  }
+
+  const renderSuggestedQuestions = () => {
+    if (!hasDetections) return null
+
+    return (
+      <Box>
+        <Typography sx={{ mb: 1, fontWeight: 700, color: '#0f172a', fontSize: '0.95rem' }}>
+          Câu hỏi gợi ý
+        </Typography>
+
+        {isLoadingSuggestedQuestions && (
+          <CircularProgress size={16} sx={{ mb: 1 }} />
+        )}
+
+        {suggestedQuestionsError && (
+          <Alert severity="warning" sx={{ mb: 1, borderRadius: 2 }}>
+            {suggestedQuestionsError}
+          </Alert>
+        )}
+
+        {!!suggestedQuestions.length && (
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+            {suggestedQuestions.map((question, index) => (
+              <Button
+                key={`${question}-${index}`}
+                variant="outlined"
+                onClick={() => handleSuggestedQuestionClick(question)}
+                disabled={isEmbeddedSending}
+                sx={{
+                  justifyContent: 'flex-start',
+                  textAlign: 'left',
+                  minHeight: 42,
+                  width: 'fit-content',
+                  maxWidth: '100%',
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  fontWeight: 400,
+                  color: '#0f172a',
+                  borderColor: 'rgba(2, 132, 199, 0.28)',
+                  bgcolor: '#f8fafc',
+                  '&:hover': {
+                    borderColor: '#0284c7',
+                    bgcolor: '#eef8ff'
+                  }
+                }}
+              >
+                {question}
+              </Button>
+            ))}
+          </Box>
+        )}
+      </Box>
     )
   }
 
@@ -515,7 +753,51 @@ function SkinDetection() {
               </Stack>
             </Paper>
           </Grid>
+
         </Grid>
+
+        {hasDetections && (
+          <Paper
+            sx={{
+              mt: 3,
+              px: { xs: 2, md: 3 },
+              py: { xs: 1.5, md: 2 },
+              borderRadius: 2,
+              bgcolor: (theme) => theme.palette.mode === 'dark' ? '#f5f7fb' : '#ffffff',
+              boxShadow: '0 18px 45px rgba(15, 23, 42, 0.08)'
+            }}
+          >
+            {renderSuggestedQuestions()}
+          </Paper>
+        )}
+
+        {isEmbeddedChatOpen && (
+          <Box sx={{ mt: 3, width: '100%', height: { xs: 560, md: 600 }, minHeight: 0 }}>
+            <ChatBox
+              activeConversation={embeddedChatConversation}
+              messages={embeddedMessages}
+              currentUserName='Bạn'
+              getMessageSenderName={() => 'Trợ lý AI'}
+              isCurrentUserMessage={(message) => message.role === 'user'}
+              participantFallbackLabel='AI'
+              emptyTitle='Trợ lý AI'
+              emptyDescription='Chọn một câu hỏi gợi ý để bắt đầu tư vấn theo kết quả nhận diện.'
+              emptyIcon={<SmartToyRoundedIcon sx={{ fontSize: 34 }} />}
+              statusLabel={isEmbeddedSending ? 'Đang trả lời' : 'Sẵn sàng'}
+              inactiveStatusText='Sẵn sàng tư vấn'
+              messageInput={embeddedMessageInput}
+              onMessageInputChange={setEmbeddedMessageInput}
+              onMessageInputKeyDown={handleEmbeddedInputKeyDown}
+              onSendMessage={handleEmbeddedSendMessage}
+              messagesEndRef={embeddedMessagesEndRef}
+              canSendMessage={Boolean(embeddedConversation && embeddedMessageInput.trim() && !isEmbeddedSending)}
+              inputPlaceholder='Nhập câu hỏi tiếp theo...'
+              disabledInputPlaceholder='Chọn một câu hỏi gợi ý trước...'
+              showImageUpload={false}
+              isSending={isEmbeddedSending}
+            />
+          </Box>
+        )}
 
         <Paper sx={{ mt: 3, p: { xs: 2, md: 3 }, borderRadius: 2, bgcolor: (theme) => theme.palette.mode === 'dark' ? '#f5f7fb' : '#ffffff', boxShadow: '0 18px 45px rgba(15, 23, 42, 0.08)' }}>
           <Stack direction="row" alignItems="center" justifyContent="space-between" gap={2} sx={{ mb: 2 }}>

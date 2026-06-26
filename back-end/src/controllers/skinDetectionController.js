@@ -23,6 +23,16 @@ const skinDetectionController = {
     }
   },
 
+  suggestQuestions: async (req, res, next) => {
+    try {
+      const userId = req.jwtDecoded._id
+      const result = await skinDetectionService.suggestQuestions(userId, req.body)
+      res.status(StatusCodes.OK).json(result)
+    } catch (error) {
+      next(error)
+    }
+  },
+
   deleteHistoryItem: async (req, res, next) => {
     try {
       const userId = req.jwtDecoded._id

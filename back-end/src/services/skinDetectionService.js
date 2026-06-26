@@ -24,6 +24,15 @@ const normalizeDetections = (detections) => {
     .filter((item) => item.ten_benh)
 }
 
+const normalizeDiseases = (diseases) => {
+  if (!Array.isArray(diseases)) return []
+
+  return diseases
+    .map((disease) => String(disease || '').trim())
+    .filter(Boolean)
+    .filter((disease, index, diseaseList) => diseaseList.indexOf(disease) === index)
+}
+
 const parseDetectionsHeader = (headerValue) => {
   if (!headerValue) return []
 
@@ -32,6 +41,43 @@ const parseDetectionsHeader = (headerValue) => {
   } catch (error) {
     throw new ApiError(StatusCodes.BAD_GATEWAY, 'Python Server tra ve metadata nhan dien khong hop le')
   }
+}
+
+const callPythonSuggestedQuestionsServer = async (diseases, mode = 'patient') => {
+  const pythonServerUrl = getPythonServerUrl()
+
+  let response
+  try {
+    response = await fetch(`${pythonServerUrl}/suggest-questions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ diseases, count: 5, mode })
+    })
+  } catch (error) {
+    throw new ApiError(StatusCodes.BAD_GATEWAY, 'Khong ket noi duoc may chu RAG de tao cau hoi goi y')
+  }
+
+  if (!response.ok) {
+    let errorMessage = 'May chu RAG tao cau hoi goi y that bai'
+    try {
+      const errorData = await response.json()
+      errorMessage = errorData?.detail || errorData?.message || errorMessage
+    } catch (error) {
+      // Keep the default upstream error message.
+    }
+    throw new ApiError(StatusCodes.BAD_GATEWAY, errorMessage)
+  }
+
+  const responseData = await response.json()
+  const questions = Array.isArray(responseData?.questions)
+    ? responseData.questions.map((question) => String(question || '').trim()).filter(Boolean)
+    : []
+
+  if (questions.length !== 5) {
+    throw new ApiError(StatusCodes.BAD_GATEWAY, 'May chu RAG khong tra ve dung 5 cau hoi goi y')
+  }
+
+  return { questions }
 }
 
 const callPythonDetectionServer = async (imageUrl) => {
@@ -165,6 +211,22 @@ const skinDetectionService = {
     await ensureExistingActiveUser(userId)
     const detections = await skinDetectionModel.findManyByUserId(userId)
     return detections.map(buildDetectionResponse)
+  },
+
+  suggestQuestions: async (userId, reqBody = {}) => {
+    const currentUser = await ensureExistingActiveUser(userId)
+    const diseasesFromDetections = normalizeDetections(reqBody.detections)
+      .map((detection) => detection.ten_benh)
+    const diseases = normalizeDiseases([
+      ...normalizeDiseases(reqBody.diseases),
+      ...diseasesFromDetections
+    ])
+
+    if (!diseases.length) {
+      throw new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, 'Vui long cung cap it nhat mot benh da nhan dien')
+    }
+
+    return await callPythonSuggestedQuestionsServer(diseases, currentUser.role)
   },
 
   deleteHistoryItem: async (userId, detectionId) => {

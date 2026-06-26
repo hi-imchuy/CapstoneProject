@@ -35,6 +35,8 @@ DETECTION_DISEASE_NAME_MAP = {
   "ViemDaCoDia": "Viêm da cơ địa",
   "ZonaThanKinh": "Zona thần kinh",
 }
+MAX_HISTORY_MESSAGES = 20
+HISTORY_CONTENT_LIMIT = 800
 
 
 class RagConfigurationError(RuntimeError):
@@ -179,6 +181,7 @@ class RagChatbot:
     self._collection = None
     self._embedding_function = None
     self._supported_diseases: Optional[List[str]] = None
+    self._disease_lookup_entries: Optional[List[tuple[str, str]]] = None
 
   def load_chunks(self) -> List[Dict[str, Any]]:
     if not self.data_path.exists():
@@ -340,6 +343,196 @@ class RagChatbot:
       })
     return self._supported_diseases
 
+  def disease_lookup_entries(self) -> List[tuple[str, str]]:
+    if self._disease_lookup_entries is None:
+      chunks = self.load_chunks()
+      entries = {}
+      for chunk in chunks:
+        disease = str(chunk.get("disease", "")).strip()
+        if not disease:
+          continue
+        terms = [disease, *as_list(chunk.get("aliases", []))]
+        for term in terms:
+          normalized_term = normalize_lookup_text(term)
+          if normalized_term:
+            entries[(disease, normalized_term)] = (disease, normalized_term)
+
+      self._disease_lookup_entries = sorted(
+        entries.values(),
+        key=lambda item: len(item[1]),
+        reverse=True
+      )
+    return self._disease_lookup_entries
+
+  def find_disease_mentions(self, text: str) -> List[str]:
+    normalized_text = normalize_lookup_text(text)
+    if not normalized_text:
+      return []
+
+    matches = []
+    for disease, normalized_term in self.disease_lookup_entries():
+      if re.search(rf"(?<!\w){re.escape(normalized_term)}(?!\w)", normalized_text):
+        if disease not in matches:
+          matches.append(disease)
+    return matches
+
+  def latest_history_disease(self, history: Optional[List[Dict[str, str]]]) -> Optional[str]:
+    for item in reversed((history or [])[-MAX_HISTORY_MESSAGES:]):
+      content = str(item.get("content", ""))
+      mentions = self.find_disease_mentions(content)
+      if mentions:
+        return mentions[0]
+    return None
+
+  def is_supported_disease(self, disease: str) -> bool:
+    normalized_disease = normalize_lookup_text(disease)
+    return any(
+      normalized_term == normalized_disease
+      for _, normalized_term in self.disease_lookup_entries()
+    )
+
+  def parse_json_object(self, text: str) -> Dict[str, Any]:
+    cleaned = text.strip()
+    cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"\s*```$", "", cleaned)
+    match = re.search(r"\{.*\}", cleaned, flags=re.DOTALL)
+    if match:
+      cleaned = match.group(0)
+    parsed = json.loads(cleaned)
+    if not isinstance(parsed, dict):
+      raise ValueError("Expected a JSON object")
+    return parsed
+
+  def call_llm(self, messages: List[Dict[str, str]]) -> str:
+    api_key = os.getenv("NINE_ROUTER_API_KEY") or os.getenv("OPENAI_API_KEY")
+    if not api_key:
+      raise RagConfigurationError("NINE_ROUTER_API_KEY is missing. Add it to python-server/.env")
+
+    base_url = (os.getenv("NINE_ROUTER_BASE_URL") or DEFAULT_NINE_ROUTER_BASE_URL).rstrip("/")
+    model = os.getenv("NINE_ROUTER_MODEL") or DEFAULT_NINE_ROUTER_MODEL
+
+    try:
+      request_body = json.dumps({
+        "model": model,
+        "messages": messages
+      }, ensure_ascii=False).encode("utf-8")
+      request = urllib_request.Request(
+        f"{base_url}/chat/completions",
+        data=request_body,
+        headers={
+          "Authorization": f"Bearer {api_key}",
+          "Content-Type": "application/json"
+        },
+        method="POST"
+      )
+      with urllib_request.urlopen(request, timeout=LLM_REQUEST_TIMEOUT_SECONDS) as response:
+        response_data = json.loads(response.read().decode("utf-8"))
+    except urllib_error.HTTPError as error:
+      error_body = error.read().decode("utf-8", errors="replace")
+      raise RagConfigurationError(f"9router API request failed: HTTP {error.code} {error_body}") from error
+    except (urllib_error.URLError, TimeoutError, json.JSONDecodeError) as error:
+      raise RagConfigurationError(f"9router API request failed: {error}") from error
+
+    return self._response_text(response_data)
+
+  def rewrite_query_with_history(
+    self,
+    message: str,
+    history: Optional[List[Dict[str, str]]] = None,
+    mode: str = "patient"
+  ) -> Dict[str, Any]:
+    supported_diseases = ", ".join(self.supported_diseases())
+
+    system_prompt = (
+      "Bạn là bộ phận rewrite câu hỏi cho hệ thống RAG y khoa da liễu. "
+      "Đọc lịch sử hội thoại và câu hỏi hiện tại của người dùng, sau đó viết lại câu hỏi hiện tại thành MỘT câu hỏi tiếng Việt tự nhiên, đầy đủ ngữ cảnh, giống như một người dùng bình thường tự gõ. "
+      "Chỉ rewrite câu hỏi, không trả lời câu hỏi. "
+      "Nếu câu hỏi hiện tại thiếu chủ thể/bệnh nhưng lịch sử đang nói rõ về một bệnh, hãy thêm tên bệnh đó vào câu hỏi. "
+      "Nếu câu hỏi hiện tại đã nêu rõ bệnh, ưu tiên bệnh trong câu hỏi hiện tại. "
+      "Không thêm kiến thức y khoa mới. "
+      "Không thêm metadata, không ghi 'ngữ cảnh', 'chủ đề', 'context', 'history'. "
+      "Không xuống dòng giải thích. "
+      "Câu rewrite phải là một câu hỏi tự nhiên duy nhất. "
+      "Nếu không xác định được bệnh/chủ đề từ lịch sử hoặc câu hỏi hiện tại, giữ nguyên câu hỏi hiện tại. "
+      f"The only supported disease topics are: {supported_diseases}. "
+      "Chỉ trả về JSON hợp lệ với keys: standalone_question, resolved_topic, confidence."
+    )
+    user_prompt = (
+      "Ví dụ:\n"
+      "Lịch sử: Người dùng hỏi \"Mụn trứng cá là bệnh gì?\"\n"
+      "Câu hỏi hiện tại: \"Chữa trị như nào?\"\n"
+      "Rewrite: \"Mụn trứng cá chữa trị như thế nào?\"\n\n"
+      "Lịch sử: Người dùng hỏi \"Vảy nến có nguy hiểm không?\"\n"
+      "Câu hỏi hiện tại: \"Triệu chứng ra sao?\"\n"
+      "Rewrite: \"Vảy nến có triệu chứng ra sao?\"\n\n"
+      "Lịch sử: Người dùng hỏi về vảy nến\n"
+      "Câu hỏi hiện tại: \"Mụn trứng cá chữa trị như thế nào?\"\n"
+      "Rewrite: \"Mụn trứng cá chữa trị như thế nào?\"\n\n"
+      f"Dữ liệu đầu vào:\n"
+      f"Mode: {mode}\n"
+      f"Danh sách bệnh hệ thống hỗ trợ: {supported_diseases}\n\n"
+      f"Lịch sử hội thoại:\n{self.format_history_for_prompt(history)}\n\n"
+      f"Câu hỏi hiện tại:\n{message}\n\n"
+      "Chỉ trả về JSON hợp lệ:\n"
+      "{\n"
+      "  \"standalone_question\": \"câu hỏi đã rewrite\",\n"
+      "  \"resolved_topic\": \"tên bệnh/chủ đề nếu xác định được, nếu không thì để chuỗi rỗng\",\n"
+      "  \"confidence\": số từ 0 đến 1\n"
+      "}"
+    )
+
+    try:
+      rewrite_text = self.call_llm([
+        { "role": "system", "content": system_prompt },
+        { "role": "user", "content": user_prompt }
+      ])
+      rewrite_data = self.parse_json_object(rewrite_text)
+    except Exception:
+      return {
+        "standalone_question": message,
+        "resolved_topic": None,
+        "confidence": 0.0,
+        "used_fallback": True
+      }
+
+    standalone_question = str(rewrite_data.get("standalone_question", "")).strip()
+    resolved_topic = str(rewrite_data.get("resolved_topic", "")).strip()
+    try:
+      confidence = float(rewrite_data.get("confidence", 0) or 0)
+    except (TypeError, ValueError):
+      confidence = 0.0
+
+    if not standalone_question:
+      return {
+        "standalone_question": message,
+        "resolved_topic": None,
+        "confidence": 0.0,
+        "used_fallback": True
+      }
+
+    if resolved_topic and not self.is_supported_disease(resolved_topic):
+      return {
+        "standalone_question": message,
+        "resolved_topic": None,
+        "confidence": 0.0,
+        "used_fallback": True
+      }
+
+    if confidence < 0.35 and not self.find_disease_mentions(standalone_question):
+      return {
+        "standalone_question": message,
+        "resolved_topic": None,
+        "confidence": confidence,
+        "used_fallback": True
+      }
+
+    return {
+      "standalone_question": standalone_question,
+      "resolved_topic": resolved_topic or None,
+      "confidence": max(0.0, min(confidence, 1.0)),
+      "used_fallback": False
+    }
+
   def metadata_score(self, chunk: Dict[str, Any], query_tags: Dict[str, List[str]], mode: str) -> float:
     score = 0.0
     priority = int(chunk.get("retrieval_priority", 0) or 0)
@@ -367,6 +560,112 @@ class RagChatbot:
       score += 0.1
 
     return score
+
+  def chunk_matches_query_disease(self, chunk: Dict[str, Any], query_tags: Dict[str, List[str]]) -> bool:
+    disease_terms = {
+      normalize_lookup_text(term)
+      for term in query_tags.get("diseases", [])
+      if str(term).strip()
+    }
+    if not disease_terms:
+      return False
+
+    chunk_terms = {
+      normalize_lookup_text(chunk.get("disease", "")),
+      *[normalize_lookup_text(alias) for alias in as_list(chunk.get("aliases", []))]
+    }
+    return bool(disease_terms & chunk_terms)
+
+  def query_has_treatment_intent(self, message: str, query_tags: Dict[str, List[str]]) -> bool:
+    normalized_message = normalize_lookup_text(message)
+    treatment_terms = [
+      "dieu tri",
+      "ddieu tri",
+      "chua tri",
+      "cach tri",
+      "tri benh",
+      "thuoc",
+      "khang sinh",
+    ]
+    return bool(query_tags.get("treatment_tags")) or any(term in normalized_message for term in treatment_terms)
+
+  def query_has_diagnosis_intent(self, message: str) -> bool:
+    normalized_message = normalize_lookup_text(message)
+    diagnosis_terms = [
+      "chan doan",
+      "xet nghiem",
+      "kiem tra",
+      "phan biet",
+    ]
+    return any(term in normalized_message for term in diagnosis_terms)
+
+  def query_has_symptom_intent(self, message: str) -> bool:
+    normalized_message = normalize_lookup_text(message)
+    symptom_terms = [
+      "trieu chung",
+      "dau hieu",
+      "bieu hien",
+    ]
+    return any(term in normalized_message for term in symptom_terms)
+
+  def query_has_risk_intent(self, message: str, query_tags: Dict[str, List[str]]) -> bool:
+    normalized_message = normalize_lookup_text(message)
+    risk_terms = [
+      "nguy hiem",
+      "nang khong",
+      "co nang",
+      "can di kham",
+      "khi nao di kham",
+      "bien chung",
+      "de lai seo",
+      "rui ro",
+    ]
+    return bool(query_tags.get("red_flag_tags")) or any(term in normalized_message for term in risk_terms)
+
+  def disease_candidates(
+    self,
+    message: str,
+    query_tags: Dict[str, List[str]],
+    mode: str
+  ) -> List[RetrievalResult]:
+    if not query_tags.get("diseases"):
+      return []
+
+    treatment_intent = self.query_has_treatment_intent(message, query_tags)
+    diagnosis_intent = self.query_has_diagnosis_intent(message)
+    symptom_intent = self.query_has_symptom_intent(message)
+    risk_intent = self.query_has_risk_intent(message, query_tags)
+    candidates = []
+
+    for chunk in self._chunks_by_id.values():
+      if not self.chunk_matches_query_disease(chunk, query_tags):
+        continue
+      if mode == "patient" and not self._patient_can_use_chunk(chunk, query_tags):
+        continue
+      if mode == "patient" and int(chunk.get("retrieval_priority", 0) or 0) < 3:
+        continue
+      if mode == "doctor" and int(chunk.get("retrieval_priority", 0) or 0) < 2:
+        continue
+
+      section = normalize_lookup_text(chunk.get("section", ""))
+      subtopic = normalize_lookup_text(chunk.get("subtopic", ""))
+      score = self.metadata_score(chunk, query_tags, mode) + 0.75
+      if treatment_intent and ("dieu tri" in section or "dieu tri" in subtopic or "ddieu tri" in subtopic):
+        score += 0.55
+      if diagnosis_intent and ("chan doan" in section or "xet nghiem" in subtopic):
+        score += 0.35
+      if symptom_intent and ("trieu chung" in section or "dau hieu" in subtopic):
+        score += 0.35
+      if risk_intent and "dau hieu can di kham" in subtopic:
+        score += 0.65
+      elif risk_intent and as_list(chunk.get("red_flag_tags", [])):
+        score += 0.45
+      elif risk_intent and chunk.get("requires_doctor"):
+        score += 0.2
+
+      candidates.append(RetrievalResult(chunk, 0.0, score, score))
+
+    return candidates
 
   def retrieve(self, message: str, mode: str = "patient", top_k: Optional[int] = None) -> List[RetrievalResult]:
     mode = mode if mode in ("patient", "doctor") else "patient"
@@ -399,6 +698,8 @@ class RagChatbot:
       meta_score = self.metadata_score(chunk, query_tags, mode)
       final_score = semantic_score + meta_score
       results.append(RetrievalResult(chunk, semantic_score, meta_score, final_score))
+
+    results.extend(self.disease_candidates(message, query_tags, mode))
 
     if query_tags.get("red_flag_tags") or query_tags.get("treatment_tags"):
       red_flag_results = self._red_flag_candidates(query_tags, mode)
@@ -434,13 +735,14 @@ class RagChatbot:
       return True
     if int(chunk.get("retrieval_priority", 0) or 0) != 5:
       return False
+    has_disease_overlap = self.chunk_matches_query_disease(chunk, query_tags)
     has_red_flag_overlap = bool(
       set(as_list(chunk.get("red_flag_tags", []))) & set(query_tags.get("red_flag_tags", []))
     )
     has_treatment_overlap = bool(
       set(as_list(chunk.get("treatment_tags", []))) & set(query_tags.get("treatment_tags", []))
     )
-    return has_red_flag_overlap or has_treatment_overlap
+    return has_disease_overlap or has_red_flag_overlap or has_treatment_overlap
 
   def build_context(self, results: List[RetrievalResult], mode: str) -> str:
     blocks = []
@@ -483,13 +785,28 @@ class RagChatbot:
     cleaned = " ".join(safe_sentences).strip()
     return cleaned or "This context involves medication or treatment details that require direct medical evaluation."
 
-  def generate_answer(self, message: str, results: List[RetrievalResult], mode: str) -> str:
-    api_key = os.getenv("NINE_ROUTER_API_KEY") or os.getenv("OPENAI_API_KEY")
-    if not api_key:
-      raise RagConfigurationError("NINE_ROUTER_API_KEY is missing. Add it to python-server/.env")
+  def format_history_for_prompt(self, history: Optional[List[Dict[str, str]]]) -> str:
+    lines = []
+    for item in (history or [])[-MAX_HISTORY_MESSAGES:]:
+      role = item.get("role")
+      if role not in ("user", "assistant"):
+        continue
+      content = str(item.get("content", "")).strip()
+      if not content:
+        continue
+      label = "Người dùng" if role == "user" else "Trợ lý"
+      lines.append(f"{label}: {content[:HISTORY_CONTENT_LIMIT]}")
+    return "\n".join(lines) or "None"
 
-    base_url = (os.getenv("NINE_ROUTER_BASE_URL") or DEFAULT_NINE_ROUTER_BASE_URL).rstrip("/")
-    model = os.getenv("NINE_ROUTER_MODEL") or DEFAULT_NINE_ROUTER_MODEL
+  def generate_answer(
+    self,
+    message: str,
+    results: List[RetrievalResult],
+    mode: str,
+    history: Optional[List[Dict[str, str]]] = None,
+    resolved_topic: Optional[str] = None,
+    rewritten_question: Optional[str] = None
+  ) -> str:
     context = self.build_context(results, mode)
     supported_diseases = ", ".join(self.supported_diseases())
     retrieved_diseases = ", ".join(sorted({
@@ -501,6 +818,7 @@ class RagChatbot:
       "You are a Vietnamese dermatology information chatbot. "
       "Always answer the end user in natural, friendly, easy-to-understand Vietnamese. "
       "Use only the provided RAG context. Do not invent facts outside the context. "
+      "Conversation history may only be used to understand what vague words like 'đó' or 'này' refer to; never use it as a medical knowledge source. "
       f"The knowledge base only supports these diseases: {supported_diseases}. "
       "Silently check whether the user's exact disease or topic is directly supported by the RAG context before answering. "
       f"If the user asks about a disease or topic that is not directly covered by the RAG context, answer exactly: {INSUFFICIENT_INFO_ANSWER} "
@@ -518,37 +836,19 @@ class RagChatbot:
       f"Supported diseases in the knowledge base: {supported_diseases}\n"
       f"Diseases found in retrieved context: {retrieved_diseases or 'None'}\n"
       f"Mode: {mode}\n"
+      f"Resolved conversation topic: {resolved_topic or 'None'}\n"
+      f"Standalone retrieval question: {rewritten_question or message}\n"
+      f"Conversation history for reference resolution only:\n{self.format_history_for_prompt(history)}\n\n"
       f"User question: {message}\n\n"
       f"RAG context:\n{context}\n\n"
       "Write the final answer for the end user in Vietnamese."
     )
 
-    try:
-      request_body = json.dumps({
-        "model": model,
-        "messages": [
-          { "role": "system", "content": system_prompt },
-          { "role": "user", "content": user_prompt }
-        ]
-      }, ensure_ascii=False).encode("utf-8")
-      request = urllib_request.Request(
-        f"{base_url}/chat/completions",
-        data=request_body,
-        headers={
-          "Authorization": f"Bearer {api_key}",
-          "Content-Type": "application/json"
-        },
-        method="POST"
-      )
-      with urllib_request.urlopen(request, timeout=LLM_REQUEST_TIMEOUT_SECONDS) as response:
-        response_data = json.loads(response.read().decode("utf-8"))
-    except urllib_error.HTTPError as error:
-      error_body = error.read().decode("utf-8", errors="replace")
-      raise RagConfigurationError(f"9router API request failed: HTTP {error.code} {error_body}") from error
-    except (urllib_error.URLError, TimeoutError, json.JSONDecodeError) as error:
-      raise RagConfigurationError(f"9router API request failed: {error}") from error
-
-    return self.sanitize_model_output(self._response_text(response_data))
+    answer = self.call_llm([
+      { "role": "system", "content": system_prompt },
+      { "role": "user", "content": user_prompt }
+    ])
+    return self.sanitize_model_output(answer)
 
   def _response_text(self, response: Any) -> str:
     if isinstance(response, dict):
@@ -650,19 +950,38 @@ class RagChatbot:
       "mode": mode,
     }
 
-  def chat(self, message: str, mode: str = "patient", top_k: Optional[int] = None) -> Dict[str, Any]:
-    results = self.retrieve(message, mode=mode, top_k=top_k)
+  def chat(
+    self,
+    message: str,
+    mode: str = "patient",
+    top_k: Optional[int] = None,
+    history: Optional[List[Dict[str, str]]] = None
+  ) -> Dict[str, Any]:
+    rewrite_result = self.rewrite_query_with_history(message, history, mode=mode)
+    retrieval_query = rewrite_result["standalone_question"]
+    resolved_topic = rewrite_result.get("resolved_topic")
+    results = self.retrieve(retrieval_query, mode=mode, top_k=top_k)
     if not results:
       return {
         "answer": INSUFFICIENT_INFO_ANSWER,
         "rawAnswer": "",
         "mode": mode,
+        "rewrittenQuestion": retrieval_query,
+        "resolvedTopic": resolved_topic,
+        "rewriteConfidence": rewrite_result.get("confidence", 0.0),
         "safetyFlags": [],
         "sources": [],
       }
 
     raw_answer = self.build_context(results, mode)
-    answer = self.generate_answer(message, results, mode)
+    answer = self.generate_answer(
+      message,
+      results,
+      mode,
+      history=history,
+      resolved_topic=resolved_topic,
+      rewritten_question=retrieval_query
+    )
     safety_flags = sorted({
       tag
       for result in results
@@ -672,6 +991,9 @@ class RagChatbot:
       "answer": answer,
       "rawAnswer": raw_answer,
       "mode": mode,
+      "rewrittenQuestion": retrieval_query,
+      "resolvedTopic": resolved_topic,
+      "rewriteConfidence": rewrite_result.get("confidence", 0.0),
       "safetyFlags": safety_flags,
       "sources": [self.source_payload(result) for result in results],
     }

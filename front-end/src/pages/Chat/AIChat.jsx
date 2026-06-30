@@ -370,7 +370,7 @@ function AIChat() {
           />
         </Grid>
 
-        <Grid size={{ xs: 12, md: 3 }} sx={{ minHeight: 0, display: 'flex' }}>
+        <Grid size={{ xs: 12, md: 3 }} sx={{ height: '100%', minHeight: 0, display: 'flex' }}>
           <Paper
             elevation={0}
             sx={{
@@ -415,7 +415,36 @@ function AIChat() {
               </Button>
             </Box>
 
-            <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', p: 1.2 }}>
+            <Box
+              sx={{
+                flex: 1,
+                minHeight: 0,
+                overflowY: 'auto',
+                p: 1.2,
+                pr: 0.8,
+                scrollbarWidth: 'thin',
+                scrollbarColor: (theme) => theme.palette.mode === 'dark'
+                  ? 'rgba(148, 163, 184, 0.42) transparent'
+                  : 'rgba(100, 116, 139, 0.36) transparent',
+                '&::-webkit-scrollbar': {
+                  width: 6
+                },
+                '&::-webkit-scrollbar-track': {
+                  backgroundColor: 'transparent'
+                },
+                '&::-webkit-scrollbar-thumb': {
+                  borderRadius: 999,
+                  backgroundColor: (theme) => theme.palette.mode === 'dark'
+                    ? 'rgba(148, 163, 184, 0.42)'
+                    : 'rgba(100, 116, 139, 0.36)'
+                },
+                '&::-webkit-scrollbar-thumb:hover': {
+                  backgroundColor: (theme) => theme.palette.mode === 'dark'
+                    ? 'rgba(203, 213, 225, 0.56)'
+                    : 'rgba(71, 85, 105, 0.48)'
+                }
+              }}
+            >
               {conversations.map((conversation, index) => {
                 const isActive = conversation.id === activeConversationId
                 const isEditing = conversation.id === editingConversationId

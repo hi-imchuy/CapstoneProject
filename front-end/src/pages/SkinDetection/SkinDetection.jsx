@@ -13,6 +13,7 @@ import IconButton from '@mui/material/IconButton'
 import LinearProgress from '@mui/material/LinearProgress'
 import Paper from '@mui/material/Paper'
 import Stack from '@mui/material/Stack'
+import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import Alert from '@mui/material/Alert'
 import CloudUploadRoundedIcon from '@mui/icons-material/CloudUploadRounded'
@@ -24,6 +25,7 @@ import CloseRoundedIcon from '@mui/icons-material/CloseRounded'
 import ZoomInRoundedIcon from '@mui/icons-material/ZoomInRounded'
 import ZoomOutRoundedIcon from '@mui/icons-material/ZoomOutRounded'
 import SmartToyRoundedIcon from '@mui/icons-material/SmartToyRounded'
+import SendRoundedIcon from '@mui/icons-material/SendRounded'
 import { useConfirm } from 'material-ui-confirm'
 import AppBar from '~/components/AppBar/AppBar'
 import ChatBox from '~/components/ChatBox/ChatBox'
@@ -79,6 +81,7 @@ function SkinDetection() {
   const [imageZoom, setImageZoom] = useState(1)
   const [viewerImageUrl, setViewerImageUrl] = useState('')
   const [suggestedQuestions, setSuggestedQuestions] = useState([])
+  const [customQuestionInput, setCustomQuestionInput] = useState('')
   const [isLoadingSuggestedQuestions, setIsLoadingSuggestedQuestions] = useState(false)
   const [suggestedQuestionsError, setSuggestedQuestionsError] = useState('')
   const [embeddedConversation, setEmbeddedConversation] = useState(null)
@@ -115,6 +118,7 @@ function SkinDetection() {
   const resetSuggestedQuestions = () => {
     suggestedQuestionsRequestRef.current += 1
     setSuggestedQuestions([])
+    setCustomQuestionInput('')
     setSuggestedQuestionsError('')
     setIsLoadingSuggestedQuestions(false)
   }
@@ -355,6 +359,15 @@ function SkinDetection() {
     }
   }
 
+  const handleCustomQuestionSubmit = async (event) => {
+    event?.preventDefault()
+    const trimmedQuestion = customQuestionInput.trim()
+    if (!trimmedQuestion || isEmbeddedSending) return
+
+    setCustomQuestionInput('')
+    await handleSuggestedQuestionClick(trimmedQuestion)
+  }
+
   const handleEmbeddedSendMessage = async () => {
     await sendEmbeddedMessage(embeddedConversation, embeddedMessageInput)
   }
@@ -506,6 +519,53 @@ function SkinDetection() {
             ))}
           </Box>
         )}
+
+        <Box
+          component="form"
+          onSubmit={handleCustomQuestionSubmit}
+          sx={{
+            mt: 1.5,
+            display: 'flex',
+            gap: 1,
+            alignItems: 'stretch',
+            flexDirection: { xs: 'column', sm: 'row' }
+          }}
+        >
+          <TextField
+            fullWidth
+            size="small"
+            value={customQuestionInput}
+            onChange={(event) => setCustomQuestionInput(event.target.value)}
+            placeholder="Nhập câu hỏi của bạn..."
+            disabled={isEmbeddedSending}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 2,
+                bgcolor: '#ffffff'
+              }
+            }}
+          />
+          <Button
+            type="submit"
+            variant="contained"
+            startIcon={<SendRoundedIcon />}
+            disabled={!customQuestionInput.trim() || isEmbeddedSending}
+            sx={{
+              minHeight: 40,
+              px: 2.5,
+              borderRadius: 2,
+              textTransform: 'none',
+              fontWeight: 600,
+              bgcolor: '#0284c7',
+              whiteSpace: 'nowrap',
+              '&:hover': {
+                bgcolor: '#0369a1'
+              }
+            }}
+          >
+            Gửi câu hỏi
+          </Button>
+        </Box>
       </Box>
     )
   }

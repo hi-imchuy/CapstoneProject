@@ -185,14 +185,14 @@
       "Mụn trứng cá": 70,
       "Viêm da cơ địa": 45,
       "Vảy nến": 58,
-      "Zona thần kinh": 30
+      "Zona thần kinh": 31
     },
-    "chunks": 306,
+    "chunks": 307,
     "max_content_chars": 698,
     "min_content_chars": 85,
     "review_flagged_chunks": 34,
     "differential_chunks": 34,
-    "symptom_tagged_chunks": 184
+    "symptom_tagged_chunks": 185
   },
   "chunks": [
     {
@@ -24582,6 +24582,128 @@
       "source_url": "D:\\Ki10\\CapstoneProject\\python-server\\data\\raw_data.docx",
       "last_updated": "2026-06-08",
       "search_text": "Mụn cóc - Tiên lượng - dấu hiệu cần đi khám | Mụn cóc | Hạt cơm Wart Verruca | Tiên lượng | dấu hiệu cần đi khám | mặt sinh dục suy giảm miễn dịch tổn thương sinh dục virus | Mụn cóc dấu hiệu cần đi khám như thế nào? Mụn cóc có triệu chứng gì? Khi nào Mụn cóc cần đi khám? Mụn cóc có liên quan đến mặt không? Mụn cóc có liên quan đến sinh dục không? Mụn cóc có liên quan đến suy giảm miễn dịch không? | Nhiều mụn cóc có thể tự khỏi (đặc biệt là mụn cóc thông thường); một số khác có thể tồn tại trong nhiều năm và tái phát ở cùng một vị trí hoặc ở vị trí khác, ngay cả khi đã đđiều trị. Các yếu tố ảnh hưởng đến tái phát có liên quan đến tình trạng miễn dịch toàn thân của bệnh nhân cũng như các yếu tố tại chỗ. Ví dụ: những bệnh nhân bị chấn thương tại chỗ (ví dụ: vận động viên, thợ máy, người bán thịt) có thể bị nhiễm HPV dai dẳng và tái phát. Nhiễm HPV sinh dục có khả năng gây ác tính nhưng hiếm gặp ở mụn cóc trên da do HPV, ngoại trừ ở những bệnh nhân bị suy giảm miễn dịch."
+    },
+    {
+      "id": "zona_than_kinh.dieu_tri.tra_loi_chua_tri.001",
+      "source_chunk_id": "zona_than_kinh.dieu_tri.tra_loi_chua_tri.001",
+      "title": "Zona thần kinh - Điều trị - trả lời chữa trị",
+      "disease": "Zona thần kinh",
+      "aliases": [
+        "Herpes zoster",
+        "Giời leo"
+      ],
+      "section": "Điều trị",
+      "subtopic": "trả_lời_chữa_trị",
+      "content_type": "medical_reference",
+      "audience": {
+        "primary": "patient",
+        "visibility": "public"
+      },
+      "access_level": "patient_safe",
+      "risk_level": "high",
+      "requires_doctor": true,
+      "retrieval_priority": 5,
+      "retrieval_role": "safety_critical",
+      "boost_terms": [
+        "chữa trị",
+        "điều trị",
+        "kháng virus",
+        "giảm đau",
+        "72 giờ",
+        "mụn nước",
+        "tổn thương mắt",
+        "suy giảm miễn dịch",
+        "đau thần kinh sau zona"
+      ],
+      "symptom_tags": [
+        "đau",
+        "mụn nước",
+        "phát ban"
+      ],
+      "body_site_tags": [
+        "mắt",
+        "mặt",
+        "tai",
+        "sinh dục"
+      ],
+      "trigger_tags": [
+        "virus"
+      ],
+      "treatment_tags": [
+        "kháng virus",
+        "giảm đau",
+        "chăm sóc da"
+      ],
+      "red_flag_tags": [
+        "tổn thương mắt",
+        "tổn thương mặt",
+        "tổn thương tai",
+        "đau nhiều",
+        "sốt",
+        "lan nhanh",
+        "nhiễm trùng",
+        "phụ nữ có thai",
+        "trẻ nhỏ",
+        "người cao tuổi",
+        "suy giảm miễn dịch"
+      ],
+      "population_tags": [
+        "phụ nữ có thai",
+        "trẻ nhỏ",
+        "người cao tuổi",
+        "suy giảm miễn dịch"
+      ],
+      "differential_diagnosis": {
+        "is_differential_chunk": false,
+        "possible_confusions": [],
+        "distinguishing_features": []
+      },
+      "structured_content": {
+        "summary": "Zona thần kinh nên được bác sĩ đánh giá và điều trị càng sớm càng tốt, đặc biệt trong 72 giờ đầu từ khi phát ban. Điều trị thường gồm thuốc kháng virus theo chỉ định để giảm lan rộng tổn thương, giảm đau và giảm nguy cơ đau thần kinh sau zona; chăm sóc vùng da tổn thương sạch, khô, tránh gãi hoặc làm vỡ mụn nước; và dùng thuốc giảm đau phù hợp khi cần. Cần đi khám khẩn nếu tổn thương ở mắt, mặt, tai, vùng sinh dục, đau nhiều, sốt, lan nhanh, có dấu hiệu nhiễm trùng, phụ nữ có thai, trẻ nhỏ, người cao tuổi hoặc người suy giảm miễn dịch. Không tự ý dùng thuốc kháng virus, corticoid hoặc kháng sinh khi chưa có chỉ định.",
+        "key_facts": [
+          "Zona thần kinh nên được bác sĩ đánh giá và điều trị càng sớm càng tốt, đặc biệt trong 72 giờ đầu từ khi phát ban.",
+          "Điều trị thường gồm thuốc kháng virus theo chỉ định, chăm sóc vùng da tổn thương và kiểm soát đau phù hợp.",
+          "Cần đi khám khẩn nếu tổn thương ở mắt, mặt, tai, vùng sinh dục hoặc người bệnh thuộc nhóm nguy cơ cao."
+        ],
+        "when_to_escalate": [
+          "tổn thương mắt",
+          "tổn thương mặt",
+          "tổn thương tai",
+          "đau nhiều",
+          "sốt",
+          "lan nhanh",
+          "nhiễm trùng",
+          "phụ nữ có thai",
+          "trẻ nhỏ",
+          "người cao tuổi",
+          "suy giảm miễn dịch"
+        ],
+        "patient_safe_note": "Có thể trả lời cho người bệnh rằng Zona thần kinh cần được khám sớm, nhất là trong 72 giờ đầu, vì thuốc kháng virus có hiệu quả nhất khi dùng sớm và phải theo chỉ định bác sĩ. Hướng dẫn chăm sóc da nhẹ nhàng, giữ tổn thương sạch khô, tránh gãi, có thể cần thuốc giảm đau phù hợp; đồng thời khuyên đi khám khẩn khi tổn thương gần mắt/mặt/tai, đau nhiều, sốt, lan nhanh, có mủ, đang mang thai, trẻ nhỏ, người cao tuổi hoặc suy giảm miễn dịch. Không đưa liều thuốc kê đơn trong chế độ bệnh nhân."
+      },
+      "metadata_quality": {
+        "status": "ok",
+        "warnings": []
+      },
+      "questions": [
+        "Zona thần kinh chữa trị như thế nào?",
+        "Zona thần kinh điều trị như thế nào?",
+        "Bị zona thần kinh nên làm gì?",
+        "Zona thần kinh có cần uống thuốc kháng virus không?",
+        "Khi nào Zona thần kinh cần đi khám gấp?",
+        "Zona thần kinh chăm sóc tại nhà như thế nào?"
+      ],
+      "content": "Zona thần kinh nên được bác sĩ đánh giá và điều trị càng sớm càng tốt, đặc biệt trong 72 giờ đầu từ khi phát ban. Điều trị thường gồm thuốc kháng virus theo chỉ định để giảm lan rộng tổn thương, giảm đau và giảm nguy cơ đau thần kinh sau zona; chăm sóc vùng da tổn thương sạch, khô, tránh gãi hoặc làm vỡ mụn nước; và dùng thuốc giảm đau phù hợp khi cần. Cần đi khám khẩn nếu tổn thương ở mắt, mặt, tai, vùng sinh dục, đau nhiều, sốt, lan nhanh, có dấu hiệu nhiễm trùng, phụ nữ có thai, trẻ nhỏ, người cao tuổi hoặc người suy giảm miễn dịch. Không tự ý dùng thuốc kháng virus, corticoid hoặc kháng sinh khi chưa có chỉ định.",
+      "safe_answer": "Có thể trả lời cho người bệnh rằng Zona thần kinh cần được khám sớm, nhất là trong 72 giờ đầu, vì thuốc kháng virus có hiệu quả nhất khi dùng sớm và phải theo chỉ định bác sĩ. Hướng dẫn chăm sóc da nhẹ nhàng, giữ tổn thương sạch khô, tránh gãi, có thể cần thuốc giảm đau phù hợp; đồng thời khuyên đi khám khẩn khi tổn thương gần mắt/mặt/tai, đau nhiều, sốt, lan nhanh, có mủ, đang mang thai, trẻ nhỏ, người cao tuổi hoặc suy giảm miễn dịch. Không đưa liều thuốc kê đơn trong chế độ bệnh nhân.",
+      "do_not_answer": [
+        "Không chẩn đoán xác định chỉ dựa trên mô tả của người dùng.",
+        "Không kê đơn hoặc hướng dẫn liều thuốc kê đơn trong chế độ bệnh nhân.",
+        "Không khuyên tự dùng thuốc kháng virus, corticoid hoặc kháng sinh khi chưa có chỉ định bác sĩ.",
+        "Không thay thế tư vấn trực tiếp của bác sĩ da liễu hoặc chuyên khoa mắt khi có tổn thương vùng mắt."
+      ],
+      "source": "manual_chunk",
+      "source_url": "D:\\Ki10\\CapstoneProject\\python-server\\data\\dermatology_rag_chunks.json",
+      "last_updated": "2026-06-30",
+      "search_text": "Zona thần kinh - Điều trị - trả lời chữa trị | Zona thần kinh | Herpes zoster Giời leo | Điều trị | trả_lời_chữa_trị | chữa trị điều trị kháng virus giảm đau 72 giờ mụn nước tổn thương mắt suy giảm miễn dịch đau thần kinh sau zona tổn thương mắt tổn thương mặt tổn thương tai đau nhiều sốt lan nhanh nhiễm trùng phụ nữ có thai trẻ nhỏ người cao tuổi suy giảm miễn dịch đau mụn nước phát ban kháng virus giảm đau chăm sóc da | Zona thần kinh chữa trị như thế nào? Zona thần kinh điều trị như thế nào? Bị zona thần kinh nên làm gì? Zona thần kinh có cần uống thuốc kháng virus không? Khi nào Zona thần kinh cần đi khám gấp? Zona thần kinh chăm sóc tại nhà như thế nào? | Zona thần kinh nên được bác sĩ đánh giá và điều trị càng sớm càng tốt, đặc biệt trong 72 giờ đầu từ khi phát ban. Điều trị thường gồm thuốc kháng virus theo chỉ định để giảm lan rộng tổn thương, giảm đau và giảm nguy cơ đau thần kinh sau zona; chăm sóc vùng da tổn thương sạch, khô, tránh gãi hoặc làm vỡ mụn nước; và dùng thuốc giảm đau phù hợp khi cần. Cần đi khám khẩn nếu tổn thương ở mắt, mặt, tai, vùng sinh dục, đau nhiều, sốt, lan nhanh, có dấu hiệu nhiễm trùng, phụ nữ có thai, trẻ nhỏ, người cao tuổi hoặc người suy giảm miễn dịch. Không tự ý dùng thuốc kháng virus, corticoid hoặc kháng sinh khi chưa có chỉ định."
     }
   ]
 }
